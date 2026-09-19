@@ -1,0 +1,38 @@
+name: Validate Nuclear Physics Lab
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check required files
+        run: |
+          test -s index.html
+          test -s styles.css
+          test -s app.js
+          test -s lesson-sequencer.css
+          test -s lesson-sequencer.js
+          test -s simulation-upgrades.css
+          test -s simulation-upgrades.js
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check lesson-sequencer.js
+          node --check simulation-upgrades.js
+      - name: Check integrations
+        run: |
+          grep -q "lesson-sequencer.js" index.html
+          grep -q "simulation-upgrades.js" index.html
+          grep -q "Lesson sequencer" lesson-sequencer.js
+          grep -q "Required practical 12" index.html
