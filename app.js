@@ -738,7 +738,11 @@ function formulaNote(id){
     radius:"Cube-root dependence of nuclear radius.",
     density:"Shows why nuclear density is nearly constant.",
     mass:"Convert mass difference into energy.",
-    bind:"Compare stability using binding energy per nucleon.",\n    nuclei:"Convert sample mass into number of nuclei using molar mass and Avogadro constant.",\n    sampleActivity:"Combine sample composition, half-life and A = λN.",\n    closest:"Use electrostatic potential energy for a head-on alpha closest-approach estimate.",\n    gamma:"Convert a nuclear level spacing into gamma-photon frequency."
+    bind:"Compare stability using binding energy per nucleon.",
+    nuclei:"Convert sample mass into number of nuclei using molar mass and Avogadro constant.",
+    sampleActivity:"Combine sample composition, half-life and A = λN.",
+    closest:"Use electrostatic potential energy for a head-on alpha closest-approach estimate.",
+    gamma:"Convert a nuclear level spacing into gamma-photon frequency."
   }[id]||"";
 }
 function renderFormula(){
