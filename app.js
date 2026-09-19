@@ -684,12 +684,16 @@ function renderSim(now){
   if(id==="rutherford")renderRutherford(ctx,w,h,t);
   else if(id==="radiation")renderRadiation(ctx,w,h,t);
   else if(id==="decay")renderDecay(ctx,w,h,t);
-  else if(id==="stability")renderStability(ctx,w,h);\n  else if(id==="energyLevels")renderEnergyLevels(ctx,w,h,t);
-  else if(id==="closestApproach")renderClosestApproach(ctx,w,h,t);\n  else if(id==="electronDiffraction")renderElectronDiffraction(ctx,w,h);\n  else if(id==="radius")renderRadius(ctx,w,h);
+  else if(id==="stability")renderStability(ctx,w,h);
+  else if(id==="energyLevels")renderEnergyLevels(ctx,w,h,t);
+  else if(id==="closestApproach")renderClosestApproach(ctx,w,h,t);
+  else if(id==="electronDiffraction")renderElectronDiffraction(ctx,w,h);
+  else if(id==="radius")renderRadius(ctx,w,h);
   else if(id==="massEnergy")renderMassEnergy(ctx,w,h);
   else if(id==="binding")renderBinding(ctx,w,h);
   else if(id==="fission")renderFission(ctx,w,h,t);
-  else if(id==="moderation")renderModeration(ctx,w,h,t);\n  else if(id==="reactor")renderReactor(ctx,w,h,t);
+  else if(id==="moderation")renderModeration(ctx,w,h,t);
+  else if(id==="reactor")renderReactor(ctx,w,h,t);
 }
 function animationLoop(now){renderSim(now);requestAnimationFrame(animationLoop);}
 
