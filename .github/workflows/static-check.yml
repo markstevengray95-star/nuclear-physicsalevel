@@ -1,0 +1,35 @@
+name: Static app checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check simulation-upgrades.js
+          node --check lesson-sequencer.js
+          node --check mastery-upgrades.js
+
+      - name: Check required app files
+        run: |
+          test -f index.html
+          test -f styles.css
+          test -f lesson-sequencer.css
+          test -f simulation-upgrades.css
+          test -f mastery-upgrades.css
+
+      - name: Check index references
+        run: |
+          grep -q 'app.js' index.html
+          grep -q 'lesson-sequencer.js' index.html
+          grep -q 'simulation-upgrades.js' index.html
+          grep -q 'mastery-upgrades.js' index.html
