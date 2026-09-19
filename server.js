@@ -2,8 +2,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const port = process.env.PORT || 3000;
 const root = __dirname;
+const port = process.env.PORT || 3000;
 const types = {
   ".html":"text/html; charset=utf-8",
   ".css":"text/css; charset=utf-8",
@@ -17,20 +17,35 @@ const types = {
   ".ico":"image/x-icon"
 };
 
+function safePath(urlPath) {
+  const clean = decodeURIComponent(urlPath.split("?")[0]).replace(/^\/+/, "");
+  const requested = clean || "index.html";
+  const full = path.normalize(path.join(root, requested));
+  return full.startsWith(root) ? full : null;
+}
+
 http.createServer((req,res)=>{
-  let urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
-  if (urlPath === "/") urlPath = "/index.html";
-  const safePath = path.normalize(urlPath).replace(/^(..[/\\])+/, "");
-  const filePath = path.join(root, safePath);
-  if (!filePath.startsWith(root)) {
-    res.writeHead(403); res.end("Forbidden"); return;
-  }
-  fs.stat(filePath,(err,stat)=>{
-    const target = !err && stat.isDirectory() ? path.join(filePath,"index.html") : filePath;
-    fs.readFile(target,(readErr,data)=>{
-      if(readErr){res.writeHead(404,{"Content-Type":"text/plain; charset=utf-8"});res.end("Not found");return;}
-      res.writeHead(200,{"Content-Type":types[path.extname(target).toLowerCase()]||"application/octet-stream","Cache-Control":"no-cache"});
+  let file = safePath(req.url || "/");
+  if (!file) { res.writeHead(403); return res.end("Forbidden"); }
+  fs.stat(file,(err,stat)=>{
+    if (!err && stat.isDirectory()) file=path.join(file,"index.html");
+    fs.readFile(file,(readErr,data)=>{
+      if (readErr) {
+        if (!path.extname(file)) {
+          return fs.readFile(path.join(root,"index.html"),(e,index)=>{
+            if(e){res.writeHead(404);return res.end("Not found");}
+            res.writeHead(200,{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-cache"});
+            res.end(index);
+          });
+        }
+        res.writeHead(404);return res.end("Not found");
+      }
+      const ext=path.extname(file).toLowerCase();
+      res.writeHead(200,{
+        "Content-Type":types[ext] || "application/octet-stream",
+        "Cache-Control": ext===".html" ? "no-cache" : "public, max-age=3600"
+      });
       res.end(data);
     });
   });
-}).listen(port,"0.0.0.0",()=>console.log("Nuclear Physics Lab running on port "+port));
+}).listen(port,"0.0.0.0",()=>console.log("Nuclear Physics Learning Lab listening on",port));
