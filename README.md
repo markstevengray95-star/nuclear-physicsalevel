@@ -32,3 +32,6 @@ Open `index.html` locally or use GitHub Pages. The repository is build-free and 
 
 ## Safety and model note
 The gamma investigation in the app is virtual. Real work with ionising radiation must only be carried out under appropriate school procedures and supervision. Microscopic scales and reactor diagrams are schematic teaching models rather than literal scale drawings.
+
+
+_Last integration refresh: lesson sequencer and simulation upgrades enabled._
