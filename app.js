@@ -186,6 +186,54 @@ const sims = [
     exam:"The moderator slows neutrons by collisions; control rods absorb neutrons; coolant transfers thermal energy; shielding reduces exposure; shutdown systems reduce the chain reaction rapidly.",
     mistake:"Do not say the coolant controls the chain reaction directly.",
     check:{q:"What is the main role of a moderator in a thermal reactor?",opts:["Slow neutrons","Absorb all neutrons","Produce gamma rays"],a:0}
+  },
+  {
+    id:"energyLevels", code:"3.8.1.4", title:"Nuclear energy levels and gamma emission",
+    subtitle:"Move between nuclear excited states and see the gamma photon energy set by the level spacing.",
+    controls:[
+      {key:"upperLevel",label:"Upper nuclear level",type:"range",min:1,max:4,step:1,value:3,unit:""},
+      {key:"lowerLevel",label:"Lower nuclear level",type:"range",min:0,max:3,step:1,value:1,unit:""}
+    ],
+    simple:"An excited nucleus can move to a lower nuclear energy state by emitting a gamma photon.",
+    exam:"Gamma emission changes the energy state of the nucleus but does not change proton number Z or nucleon number A. The photon energy equals the difference between the nuclear energy levels.",
+    mistake:"Do not confuse nuclear gamma transitions with electron transitions between atomic energy levels.",
+    check:{q:"During gamma emission, which nuclear quantities stay unchanged?",opts:["A and Z","Energy only","Z only"],a:0}
+  },
+  {
+    id:"closestApproach", code:"3.8.1.5", title:"Alpha closest approach",
+    subtitle:"Use a head-on alpha particle to connect kinetic energy with electrostatic potential energy at minimum separation.",
+    controls:[
+      {key:"targetZ",label:"Target proton number Z",type:"range",min:20,max:92,step:1,value:79,unit:""},
+      {key:"alphaMeV",label:"Alpha kinetic energy",type:"range",min:3,max:10,step:.25,value:5.0,unit:" MeV"}
+    ],
+    simple:"A head-on alpha particle slows as electrostatic potential energy increases. At closest approach its initial kinetic energy has been converted into electrostatic potential energy in the ideal model.",
+    exam:"For a head-on closest-approach estimate, set the initial alpha kinetic energy equal to the Coulomb potential energy between charges +2e and +Ze.",
+    mistake:"Use both nuclear charges in the Coulomb expression and convert MeV to joules if working fully in SI units.",
+    check:{q:"Increasing alpha kinetic energy makes the closest approach distance…",opts:["smaller","larger","unchanged"],a:0}
+  },
+  {
+    id:"electronDiffraction", code:"3.8.1.5", title:"Electron diffraction by nuclei",
+    subtitle:"Change nuclear radius and electron wavelength to see how the diffraction pattern shifts.",
+    controls:[
+      {key:"diffRadius",label:"Nuclear radius",type:"range",min:3,max:8,step:.1,value:5.0,unit:" fm"},
+      {key:"wavelength",label:"Electron wavelength (relative)",type:"range",min:.4,max:1.2,step:.05,value:.7,unit:" fm"}
+    ],
+    simple:"Short-wavelength electrons can diffract from a nucleus. The angular positions of minima contain information about nuclear size.",
+    exam:"Electron diffraction provides a nuclear-radius measurement because the de Broglie wavelength can be comparable with nuclear dimensions. A larger scattering object shifts diffraction features to smaller angles for the same wavelength.",
+    mistake:"Do not treat the intensity pattern as Rutherford scattering; this is wave diffraction.",
+    check:{q:"For the same electron wavelength, a larger nucleus moves the first diffraction minimum to…",opts:["a smaller angle","a larger angle","exactly 90°"],a:0}
+  },
+  {
+    id:"moderation", code:"3.8.1.7", title:"Neutron moderation by collisions",
+    subtitle:"Compare how effectively different target-nucleus masses reduce a fast neutron's kinetic energy in a simple collision model.",
+    controls:[
+      {key:"massRatio",label:"Moderator nucleus mass / neutron mass",type:"range",min:1,max:20,step:1,value:2,unit:""},
+      {key:"collisionCount",label:"Number of collisions",type:"range",min:1,max:12,step:1,value:5,unit:""}
+    ],
+    simple:"A moderator reduces neutron kinetic energy through collisions. Energy transfer is most effective when the colliding masses are not extremely different.",
+    exam:"A moderator should slow neutrons efficiently while having a low tendency to absorb them. A simple mechanical collision model helps explain energy transfer during moderation.",
+    mistake:"Moderation means slowing neutrons, not removing them from the chain reaction.",
+    check:{q:"What is the primary purpose of a moderator?",opts:["Reduce neutron kinetic energy","Absorb every neutron","Cool the fuel directly"],a:0}
   }
 ];
 
@@ -562,6 +610,71 @@ function renderReactor(ctx,w,h,t){
   const neutronFactor=1-control/125,power=clamp(100*neutronFactor,0,100),thermal=power*(1-cooling/120);
   readout("Conceptual neutron level: <strong>"+power.toFixed(0)+"%</strong> · residual thermal-load indicator: "+thermal.toFixed(0)+"%<br>Moderator slows neutrons; control systems absorb neutrons; coolant removes heat.");
 }
+function renderEnergyLevels(ctx,w,h,t){
+  const levels=[0,0.14,0.39,0.82,1.42];
+  let up=Math.round(params.upperLevel), low=Math.round(params.lowerLevel);
+  if(low>=up) low=Math.max(0,up-1);
+  const left=w*.18,right=w*.76,base=h*.79,scale=h*.43/1.5;
+  levels.forEach((E,i)=>{
+    const y=base-E*scale;
+    ctx.strokeStyle=i===up?"#ffe98a":i===low?"#67c7ff":"rgba(190,215,240,.45)";
+    ctx.lineWidth=(i===up||i===low)?3:1.5;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
+    label(ctx,"E"+i+"  "+E.toFixed(2)+" MeV",right+12,y+4,"#cfe8ff",11);
+  });
+  const y1=base-levels[up]*scale,y2=base-levels[low]*scale,x=w*.46;
+  arrowLine(ctx,x,y1+8,x,y2-8,"#ffe98a");
+  const dE=Math.max(0,levels[up]-levels[low]);
+  const ph=(t*.55)%1, gx=x+(w*.30)*ph, gy=y1+(y2-y1)*ph;
+  ctx.strokeStyle="#ffe98a";ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<18;i++){const xx=gx-35+i*4,yy=gy+Math.sin(i*1.6)*6;if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);}ctx.stroke();
+  readout("ΔE = <strong>"+dE.toFixed(2)+" MeV</strong> · A and Z unchanged during gamma emission.");
+}
+function arrowLine(ctx,x1,y1,x2,y2,color){
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1),q=8;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-Math.cos(a-.55)*q,y2-Math.sin(a-.55)*q);ctx.lineTo(x2-Math.cos(a+.55)*q,y2-Math.sin(a+.55)*q);ctx.closePath();ctx.fill();
+}
+function renderClosestApproach(ctx,w,h,t){
+  const Z=params.targetZ,E=params.alphaMeV;
+  const k=8.9875517923e9, Ej=E*1e6*e, r=k*(2*Z*e*e)/Ej, rfm=r/1e-15;
+  const nx=w*.70,ny=h*.50,nr=52;drawNucleus(ctx,nx,ny,nr,14,18);
+  const phase=(Math.sin(t*.9)+1)/2, minPx=nr+34, x=w*.10+(nx-minPx-w*.10)*(phase<.5?phase*2:(1-phase)*2);
+  circle(ctx,x,ny,8,"#ffe98a","#fff7c2");arrowLine(ctx,x+12,ny-25,nx-nr-8,ny-25,"rgba(255,233,138,.55)");
+  label(ctx,"head-on α",x,ny+32,"#ffe98a",12,"center");label(ctx,"+Ze nucleus",nx,ny+nr+25,"#ffd1d8",12,"center");
+  readout("r = k(2Ze²)/E = <strong>"+rfm.toFixed(1)+" fm</strong> for Z="+Z+" and E="+E.toFixed(2)+" MeV.");
+}
+function renderElectronDiffraction(ctx,w,h){
+  const R=params.diffRadius,lam=params.wavelength;
+  const left=w*.10,base=h*.78,gw=w*.80,gh=h*.58;
+  ctx.strokeStyle="#7890aa";ctx.beginPath();ctx.moveTo(left,base-gh);ctx.lineTo(left,base);ctx.lineTo(left+gw,base);ctx.stroke();
+  const first=clamp(18*(lam/.7)*(5/R),4,55);
+  ctx.beginPath();
+  for(let i=0;i<=220;i++){
+    const ang=65*i/220;
+    const x=ang/(first||1)*3.8317;
+    const sinc=Math.abs(x)<.05?1:Math.sin(x)/x;
+    const intensity=Math.pow(sinc,2)*Math.exp(-ang/90);
+    const px=left+gw*i/220,py=base-gh*intensity;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle="#67c7ff";ctx.lineWidth=3;ctx.stroke();
+  const minX=left+gw*(first/65);ctx.strokeStyle="#ffe98a";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(minX,base-gh*.05);ctx.lineTo(minX,base);ctx.stroke();ctx.setLineDash([]);
+  label(ctx,"intensity",left-6,base-gh,"#cfe8ff",11,"right");label(ctx,"angle",left+gw,base+20,"#cfe8ff",11,"right");label(ctx,"1st minimum ≈ "+first.toFixed(1)+"°",minX,base-12,"#ffe98a",11,"center");
+  readout("Teaching diffraction pattern · larger R → smaller first-minimum angle for fixed wavelength.");
+}
+function renderModeration(ctx,w,h,t){
+  const M=params.massRatio,n=Math.round(params.collisionCount);
+  const retain=Math.pow((M-1)/(M+1),2);
+  const energies=[1];for(let i=1;i<=n;i++)energies.push(energies[i-1]*(.5+.5*retain));
+  const y=h*.48,left=w*.08,right=w*.90,step=(right-left)/Math.max(1,n);
+  for(let i=0;i<=n;i++){
+    const x=left+i*step,rad=5+11*Math.sqrt(energies[i]);circle(ctx,x,y,rad,"#7ee8ff","#fff");
+    if(i<n){ctx.strokeStyle="rgba(126,232,255,.35)";ctx.beginPath();ctx.moveTo(x+rad,y);ctx.lineTo(x+step-rad,y);ctx.stroke();}
+    if(i>0){circle(ctx,x,y+85,10+Math.min(14,M*.7),"#72a9ff","rgba(255,255,255,.25)");}
+  }
+  label(ctx,"fast neutron",left,y-35,"#9fe8ff",11,"center");label(ctx,"after "+n+" collisions",right,y-35,"#9fe8ff",11,"center");
+  readout("Relative kinetic energy after "+n+" collisions ≈ <strong>"+energies[n].toFixed(3)+"</strong> of initial (schematic collision model).");
+}
+
 function renderSim(now){
   const canvas=$("#simCanvas"); if(!canvas)return;
   const {ctx,w,h}=sizeCanvas(canvas);clearCanvas(ctx,w,h);
@@ -571,12 +684,12 @@ function renderSim(now){
   if(id==="rutherford")renderRutherford(ctx,w,h,t);
   else if(id==="radiation")renderRadiation(ctx,w,h,t);
   else if(id==="decay")renderDecay(ctx,w,h,t);
-  else if(id==="stability")renderStability(ctx,w,h);
-  else if(id==="radius")renderRadius(ctx,w,h);
+  else if(id==="stability")renderStability(ctx,w,h);\n  else if(id==="energyLevels")renderEnergyLevels(ctx,w,h,t);
+  else if(id==="closestApproach")renderClosestApproach(ctx,w,h,t);\n  else if(id==="electronDiffraction")renderElectronDiffraction(ctx,w,h);\n  else if(id==="radius")renderRadius(ctx,w,h);
   else if(id==="massEnergy")renderMassEnergy(ctx,w,h);
   else if(id==="binding")renderBinding(ctx,w,h);
   else if(id==="fission")renderFission(ctx,w,h,t);
-  else if(id==="reactor")renderReactor(ctx,w,h,t);
+  else if(id==="moderation")renderModeration(ctx,w,h,t);\n  else if(id==="reactor")renderReactor(ctx,w,h,t);
 }
 function animationLoop(now){renderSim(now);requestAnimationFrame(animationLoop);}
 
