@@ -222,7 +222,7 @@ function lessonHTML(l){
  '<div class="seq-actions"><button class="button primary" id="seqComplete">'+(state.done[l.id]?"Mark incomplete":"Mark lesson complete")+'</button><button class="button" id="seqPrevious" '+(state.current===0?"disabled":"")+'>← Previous lesson</button><button class="button" id="seqNext" '+(state.current===sequence.length-1?"disabled":"")+'>Next lesson →</button></div>';
 }
 function phase(title,time,html){return '<section class="seq-phase"><button><span>'+title+'</span><span class="time">'+time+'</span></button><div class="seq-phase-content">'+html+'</div></section>'}
-function simName(id){const names={rutherford:"Rutherford scattering",radiation:"radiation and absorption",decay:"random decay",stability:"N–Z stability",radius:"nuclear radius",massEnergy:"mass defect",binding:"binding-energy curve",fission:"fission chain",reactor:"reactor systems"};return names[id]||id}
+function simName(id){const names={rutherford:"Rutherford scattering",radiation:"radiation and absorption",decay:"random decay",stability:"N–Z stability",energyLevels:"nuclear energy levels",closestApproach:"alpha closest approach",electronDiffraction:"electron diffraction",radius:"nuclear radius",massEnergy:"mass defect",binding:"binding-energy curve",fission:"fission chain",moderation:"neutron moderation",reactor:"reactor systems"};return names[id]||id}
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 function wireLesson(){
  $$(".seq-phase button",$("#seqRoot")).forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
