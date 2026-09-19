@@ -35,3 +35,7 @@ The gamma investigation in the app is virtual. Real work with ionising radiation
 
 
 _Last integration refresh: lesson sequencer and simulation upgrades enabled._
+
+
+## Instant browser preview
+This repository can be launched directly in StackBlitz using the public GitHub importer. The project starts with `npm start`.
