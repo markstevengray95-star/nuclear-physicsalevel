@@ -269,6 +269,22 @@ const formulas = [
   {id:"bind",name:"Binding energy per nucleon",eq:"BE/A",inputs:[["du","Mass defect / u",0.12],["A","Nucleon number A",16]],calc:v => {
     const BE=v.du*931.5, per=BE/v.A;
     return ["BE = "+v.du+" × 931.5 = "+fmt(BE,5)+" MeV","BE/A = "+fmt(BE,5)+" / "+v.A,"BE per nucleon = "+fmt(per,5)+" MeV"];
+  }},
+  {id:"nuclei",name:"Number of nuclei from sample mass",eq:"N = (m/M)N_A",inputs:[["m","Sample mass m / g",0.5],["M","Molar mass M / g mol⁻¹",60]],calc:v => {
+    const NA=6.02214076e23, n=v.m/v.M, N=n*NA;
+    return ["n = m/M = "+v.m+"/"+v.M+" = "+fmt(n,5)+" mol","N = nN_A = "+fmt(N,5)+" nuclei","Use the number of radioactive nuclei in A = λN."];
+  }},
+  {id:"sampleActivity",name:"Activity from mass and half-life",eq:"A = (ln2/T½)(m/M)N_A",inputs:[["m","Sample mass m / g",0.001],["M","Molar mass M / g mol⁻¹",60],["T","Half-life T½ / s",3600]],calc:v => {
+    const NA=6.02214076e23, N=(v.m/v.M)*NA, lambda=ln2/v.T, A=lambda*N;
+    return ["N = (m/M)N_A = "+fmt(N,5),"λ = 0.693/T½ = "+fmt(lambda,5)+" s⁻¹","A = λN = "+fmt(A,5)+" Bq"];
+  }},
+  {id:"closest",name:"Alpha closest approach",eq:"E_k = (1/4πε₀)(2Ze²/r)",inputs:[["Z","Target proton number Z",79],["E","Alpha kinetic energy / MeV",5]],calc:v => {
+    const k=8.9875517923e9, Ej=v.E*1e6*e, r=k*(2*v.Z*e*e)/Ej;
+    return ["E_k = "+v.E+" MeV = "+fmt(Ej,5)+" J","r = k(2Ze²)/E_k","r = "+fmt(r,5)+" m = "+fmt(r/1e-15,5)+" fm"];
+  }},
+  {id:"gamma",name:"Gamma photon from level spacing",eq:"ΔE = hf",inputs:[["dE","Nuclear level spacing / MeV",0.14]],calc:v => {
+    const h=6.62607015e-34, Ej=v.dE*1e6*e, freq=Ej/h;
+    return ["ΔE = "+v.dE+" MeV = "+fmt(Ej,5)+" J","f = ΔE/h","f = "+fmt(freq,5)+" Hz"];
   }}
 ];
 
@@ -292,7 +308,17 @@ const quiz = [
   ["3.8.1.7","A steady chain reaction means the neutron population is approximately…",["constant from generation to generation","zero","doubling each generation"],0,"Think balance of production and loss.","A steady reaction replaces the neutrons that are lost."],
   ["3.8.1.8","Which system transfers thermal energy away from a reactor core?",["Coolant","Moderator only","Shielding"],0,"It transports heat.","Coolant carries thermal energy away."],
   ["3.8.1.8","Why is shielding used?",["To reduce radiation exposure outside controlled regions","To increase fission rate","To increase neutron speed"],0,"It is a protection system.","Shielding attenuates ionising radiation."],
-  ["RP12","Why subtract background count rate?",["To estimate the count associated with the source/model signal","To make the distance smaller","To change the half-life"],0,"Background contributes even without the source signal.","Subtracting background isolates the measured contribution of interest."]
+  ["RP12","Why subtract background count rate?",["To estimate the count associated with the source/model signal","To make the distance smaller","To change the half-life"],0,"Background contributes even without the source signal.","Subtracting background isolates the measured contribution of interest."],
+  ["3.8.1.3","A sample contains n moles of a radioactive isotope. Which expression gives the number of nuclei?",["N = nN_A","N = n/N_A","N = N_A/n"],0,"Use the definition of the Avogadro constant.","N = nN_A."],
+  ["3.8.1.4","A nucleus emits a gamma photon. What happens to A and Z?",["Both decrease","A unchanged and Z unchanged","A unchanged and Z increases"],1,"Gamma emission is a nuclear energy transition.","The nucleus changes energy state, not its nucleon composition."],
+  ["3.8.1.4","A nuclear energy-level transition has energy difference ΔE. Which equation gives the gamma frequency?",["f = h/ΔE","f = ΔE/h","f = hc/ΔE"],1,"Start with E = hf.","f = ΔE/h."],
+  ["3.8.1.5","In a head-on closest-approach estimate, the initial alpha kinetic energy is equated to…",["gravitational potential energy","electrostatic potential energy","binding energy per nucleon"],1,"Both the alpha and target nucleus are positively charged.","The ideal head-on estimate uses Coulomb potential energy."],
+  ["3.8.1.5","For the same electron wavelength, increasing nuclear radius moves diffraction minima generally toward…",["smaller angles","larger angles","unchanged angles"],0,"Think of diffraction angle versus object size.","A larger diffracting object gives narrower angular features."],
+  ["3.8.1.7","Critical mass is linked most directly to whether…",["enough neutrons remain available to sustain the chain reaction","gamma photons escape the reactor","all nuclei have the same mass"],0,"Compare neutron production with losses.","Critical conditions depend on sustaining the neutron chain against losses."],
+  ["3.8.1.7","A good moderator should primarily…",["slow neutrons efficiently without strongly absorbing them","absorb as many neutrons as possible","increase neutron kinetic energy"],0,"Moderation and control are different jobs.","The moderator slows neutrons; control rods are used for neutron absorption."],
+  ["3.8.1.7","Why can low-mass moderator nuclei transfer neutron kinetic energy effectively?",["Their masses are relatively comparable to a neutron","They have no nucleus","They always absorb the neutron"],0,"Think about mechanical collision energy transfer.","Comparable masses can exchange a large fraction of kinetic energy in a collision."],
+  ["3.8.1.8","Why is remote handling useful for radioactive fuel or waste?",["It increases distance and reduces direct exposure","It increases the activity","It makes half-life shorter"],0,"Consider reducing exposure.","Remote handling increases separation from the radiation source."],
+  ["3.8.1.8","Which statement best links waste storage to half-life?",["Half-life helps determine how activity changes over long times","All waste becomes safe after one half-life","Half-life changes when shielding is added"],0,"Half-life describes the rate of activity decrease.","Storage decisions depend partly on how long significant activity persists."]
 ];
 
 let completed = new Set(JSON.parse(localStorage.getItem("nuclearCompleted") || "[]"));
@@ -712,7 +738,7 @@ function formulaNote(id){
     radius:"Cube-root dependence of nuclear radius.",
     density:"Shows why nuclear density is nearly constant.",
     mass:"Convert mass difference into energy.",
-    bind:"Compare stability using binding energy per nucleon."
+    bind:"Compare stability using binding energy per nucleon.",\n    nuclei:"Convert sample mass into number of nuclei using molar mass and Avogadro constant.",\n    sampleActivity:"Combine sample composition, half-life and A = λN.",\n    closest:"Use electrostatic potential energy for a head-on alpha closest-approach estimate.",\n    gamma:"Convert a nuclear level spacing into gamma-photon frequency."
   }[id]||"";
 }
 function renderFormula(){
