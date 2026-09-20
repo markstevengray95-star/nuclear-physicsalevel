@@ -259,7 +259,7 @@ function renderPlatformTab(tab){
  state.ui.tab=tab;save();
  $$(".lp-tab").forEach(b=>b.classList.toggle("active",b.dataset.lpTab===tab));
  $$(".lp-panel").forEach(p=>p.classList.toggle("active",p.id===`lp-${tab}`));
- ({today:renderToday,diagnostic:renderDiagnostic,retrieval:renderRetrieval,misconceptions:renderMisconceptions,confidence:renderConfidence}[tab]||(()=>{}))();
+ ({today:renderToday,diagnostic:renderDiagnostic,retrieval:renderRetrieval,misconceptions:renderMisconceptions,confidence:renderConfidence,calculations:renderCalculations,challenges:renderChallenges}[tab]||(()=>{}))();
 }
 function buildPlatformView(){
  const nav=$(".main-nav"),main=$("main");if(!nav||!main)return;
@@ -279,9 +279,94 @@ observer.observe(document.body,{childList:true,subtree:true});
 setInterval(()=>{if($("#interactiveLessonWorkspace")){annotateConfidence();enhanceExamCards();}},1200);
 function init(){
  if(!C()){setTimeout(init,100);return}
- buildPlatformView();annotateConfidence();enhanceExamCards();injectAdaptive();
+ buildPlatformView();annotateConfidence();enhanceExamCards();injectAdaptive();buildPracticalNotebook();
 }
 setTimeout(init,150);
+
+
+/* Feature: calculation workspace */
+const calcTools=[
+ {id:"activity",name:"Activity",eq:"A = λN",prompt:"Find activity from decay constant and number of undecayed nuclei.",units:"A in Bq; λ in s⁻¹; N has no unit",steps:["Choose A = λN","Use consistent inverse-time units for λ","Substitute λ and N","Give activity in Bq"]},
+ {id:"halflife",name:"Half-life / decay constant",eq:"T½ = ln2 / λ",prompt:"Convert between half-life and decay constant.",units:"T½ and λ must use reciprocal time units",steps:["Choose T½ = ln2/λ","Rearrange if finding λ","Convert time units consistently","State the reciprocal-time unit for λ"]},
+ {id:"decay",name:"Exponential decay",eq:"N = N₀e^(−λt)",prompt:"Find number remaining or activity after a time.",units:"λt must be dimensionless",steps:["Choose the exponential law","Make λ and t compatible","Evaluate the exponent","Use A=λN if activity is required"]},
+ {id:"moles",name:"Sample nuclei",eq:"N = (m/M)N_A",prompt:"Convert a pure isotope sample mass to number of nuclei.",units:"Use matching mass units for m and M",steps:["Find moles n=m/M","Use N=nN_A","Keep significant figures sensible","Use N in later activity calculations if needed"]},
+ {id:"radius",name:"Nuclear radius",eq:"R = r₀A^(1/3)",prompt:"Estimate nuclear radius.",units:"R and r₀ use the same length unit",steps:["Use the cube root of A","Multiply by r₀","Convert fm to m only if required","Interpret as a nuclear-scale estimate"]},
+ {id:"binding",name:"Binding energy",eq:"E = Δmc² or E(MeV)=Δm(u)×931.5",prompt:"Convert mass defect to binding energy.",units:"Use kg/J or u/MeV consistently",steps:["Find/identify mass defect","Choose SI or u→MeV route","Calculate total binding energy","Divide by A only if BE per nucleon is requested"]},
+ {id:"gamma",name:"Gamma photon",eq:"ΔE = hf",prompt:"Relate nuclear level spacing to gamma frequency.",units:"Use joules with h in J s",steps:["Find level energy difference","Convert eV/keV/MeV to joules if needed","Use f=ΔE/h","Check the frequency is in the gamma range"]},
+ {id:"closest",name:"Closest approach",eq:"E_k = k(2e)(Ze)/r",prompt:"Use the head-on Coulomb energy model.",units:"Use joules, coulombs and metres in SI",steps:["Convert alpha energy to joules","Use alpha charge +2e and target charge +Ze","Rearrange for r","Interpret the result in femtometres"]}
+];
+function renderCalculations(){
+ const host=$("#lp-calculations");if(!host)return;
+ const selected=state.ui.calc||calcTools[0].id,tool=calcTools.find(x=>x.id===selected)||calcTools[0];
+ host.innerHTML=`<div class="lp-hero"><div><h3>Calculation workspace</h3><p>Students build the method themselves: equation → rearrangement → substitution → result → units.</p></div></div>
+ <div class="lp-grid"><article class="lp-card"><label class="lp-field"><span>Calculation</span><select id="lpCalcSelect">${calcTools.map(x=>`<option value="${x.id}" ${x.id===tool.id?"selected":""}>${x.name}</option>`).join("")}</select></label><div class="lp-coach"><strong>${tool.eq}</strong><span>${tool.prompt}</span><p class="muted small">${tool.units}</p></div><ol>${tool.steps.map(x=>`<li>${x}</li>`).join("")}</ol></article>
+ <article class="lp-card"><label class="lp-field"><span>1 · Equation</span><input id="lpCalcEq" placeholder="Write the equation"></label><label class="lp-field"><span>2 · Rearranged equation</span><input id="lpCalcRearr" placeholder="Rearrange if needed"></label><label class="lp-field"><span>3 · Substitution</span><input id="lpCalcSub" placeholder="Substitute values with units"></label><label class="lp-field"><span>4 · Final answer</span><input id="lpCalcAns" placeholder="Answer"></label><label class="lp-field"><span>5 · Unit / interpretation</span><input id="lpCalcUnit" placeholder="Unit and one-sentence interpretation"></label><div class="lp-actions"><button type="button" class="primary" id="lpCalcCheck">Check method</button><button type="button" id="lpCalcHint">Hint</button></div><div id="lpCalcFeedback"></div></article></div>`;
+ $("#lpCalcSelect",host).onchange=e=>{state.ui.calc=e.target.value;save();renderCalculations()};
+ $("#lpCalcHint",host).onclick=()=>{$("#lpCalcFeedback",host).innerHTML=`<div class="lp-feedback lp-warn">Start from <strong>${tool.eq}</strong>. ${esc(tool.steps[1])}</div>`};
+ $("#lpCalcCheck",host).onclick=()=>{
+   const vals=["lpCalcEq","lpCalcRearr","lpCalcSub","lpCalcAns","lpCalcUnit"].map(id=>$("#"+id,host).value.trim());
+   const complete=vals.filter(Boolean).length;
+   const eqWords=keywords(tool.eq),eqHit=eqWords.some(k=>vals[0].toLowerCase().includes(k))||vals[0].replace(/\s/g,"").length>3;
+   $("#lpCalcFeedback",host).innerHTML=`<div class="lp-feedback ${complete===5&&eqHit?"lp-good":"lp-warn"}"><strong>${complete===5&&eqHit?"Method complete":"Keep building the method"}</strong><p>${complete}/5 stages completed. ${!eqHit?"Write the governing equation before substituting. ":""}Check units and significant figures before accepting the result.</p></div>`;
+ };
+}
+
+/* Feature: simulation challenge mode + A* synoptic challenges */
+const simMissionText=[
+ ["Nuclear scale challenge","Use the radius model to find two nuclei whose radii differ by about a factor of 2. Explain why their A values do not differ by a factor of 2."],
+ ["Rutherford investigation","Change impact parameter and alpha energy separately. Find conditions for a large deflection and explain the result using Coulomb repulsion."],
+ ["Radiation detective","Use absorber changes to distinguish alpha, beta and gamma. Explain why gamma should be described as attenuated."],
+ ["Inverse-square mission","Choose two distances with a factor of 2 between them. Predict and then test the corrected count-rate ratio."],
+ ["Risk decision","Use the radiation model to justify a suitable radiation type for a monitoring application and state one limitation."],
+ ["Random-decay evidence","Compare individual decay events with the smooth population trend and explain why both are consistent."],
+ ["Half-life mission","Set a half-life, predict the fraction after three half-lives, then verify the model."],
+ ["Activity chain","Use Formula Coach to connect sample mass → nuclei → activity and explain each conversion."],
+ ["Stability map mission","Predict how alpha, beta-minus and beta-plus/electron capture move a point on an N–Z graph before testing."],
+ ["Gamma-level mission","Choose two transitions with different energy gaps and compare emitted photon frequency."],
+ ["Closest-approach mission","Find two alpha energies that give clearly different closest-approach distances and explain the inverse relationship."],
+ ["Diffraction mission","Keep electron wavelength fixed and change nuclear radius. Record how the first minimum moves."],
+ ["Density mission","Compare A and 8A and use the displayed radii to show the cube-root relationship."],
+ ["Mass-energy mission","Change mass defect and explain how total binding energy responds."],
+ ["Binding-curve mission","Identify one light and one heavy region where moving toward more tightly bound products can release energy."],
+ ["Chain-reaction mission","Compare decreasing, roughly steady and increasing neutron-generation behaviour using only qualitative neutron balance."],
+ ["Moderation mission","Compare collision energy loss for different moderator-mass ratios and explain the mechanical reason."],
+ ["Reactor-systems mission","Identify moderator, control rods, coolant and shielding and explain why each has a different physical role."],
+ ["Synoptic simulation audit","Pick two simulations from different specification sections. State the model assumption and one observable prediction for each."]
+];
+const synoptic=[
+ {q:"A radioactive sample question gives mass, molar mass, half-life and elapsed time. Build the full calculation route to current activity.",points:["m/M to obtain moles","multiply by N_A for nuclei","λ=ln2/T½","apply exponential decay","A=λN with consistent units"]},
+ {q:"A new scattering experiment shows mostly straight paths and rare large-angle deflections. Explain how you would distinguish observation, model and inference.",points:["state observations separately","identify electrostatic interaction/model","large force implies concentrated charge","most straight paths imply mostly empty space","state a model limitation/assumption"]},
+ {q:"Compare closest-approach and electron-diffraction methods for learning about nuclear size.",points:["closest approach uses Coulomb energy","diffraction uses matter waves","both probe fm scale","different model assumptions","both connect measured behaviour to nuclear radius"]},
+ {q:"Explain why both fission and fusion can release energy without saying that mass or energy is destroyed.",points:["products can have greater BE per nucleon","bound system has lower total rest mass","mass-energy difference appears as released energy","conservation of energy is maintained"]},
+ {q:"Evaluate a thermal reactor system using neutron physics, heat transfer and safety rather than a list of component names.",points:["moderator slows neutrons","control rods absorb neutrons","coolant transfers heat","shielding/containment reduce exposure","risk-benefit conclusion uses physics evidence"]},
+ {q:"An unfamiliar nuclear-physics graph is provided. Describe a strong A* strategy before doing any calculation.",points:["identify axes/units","describe trend with evidence","select relevant model/equation","quantify gradient/proportion/uncertainty where possible","state assumptions and justified conclusion"]}
+];
+function renderChallenges(){
+ const host=$("#lp-challenges");if(!host)return;const i=Number(state.ui.challengeLesson??activeLesson()),mission=simMissionText[i]||simMissionText[0],saved=state.simChallenges[i]||{};
+ host.innerHTML=`<div class="lp-grid"><article class="lp-card"><span class="eyebrow">Simulation challenge mode</span><h3>${esc(mission[0])}</h3><p>${esc(mission[1])}</p><label class="lp-field"><span>Choose lesson challenge</span><select id="lpChallengeLesson">${lessons().map((p,n)=>`<option value="${n}" ${n===i?"selected":""}>${n+1}. ${esc(p.title)}</option>`).join("")}</select></label><label class="lp-field"><span>Prediction</span><textarea id="lpChallengePredict">${esc(saved.predict||"")}</textarea></label><label class="lp-field"><span>Evidence / readings</span><textarea id="lpChallengeEvidence">${esc(saved.evidence||"")}</textarea></label><label class="lp-field"><span>Physics explanation</span><textarea id="lpChallengeExplain">${esc(saved.explain||"")}</textarea></label><div class="lp-actions"><button type="button" class="primary" id="lpSaveChallenge">Save challenge</button><button type="button" id="lpOpenChallengeLesson">Open lesson</button></div><div id="lpChallengeFb"></div></article>
+ <article class="lp-card"><span class="eyebrow">A* synoptic mastery</span><h3>Multi-topic challenges</h3><div id="lpSynopticList">${synoptic.map((x,n)=>{const v=state.synoptic[n]||{};return `<div class="lp-question"><h4>${n+1}. ${esc(x.q)}</h4><textarea class="lp-field" data-syn-answer="${n}" style="width:100%;min-height:100px;background:#061421;color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px">${esc(v.answer||"")}</textarea><div class="lp-actions"><button type="button" data-syn-check="${n}">Check reasoning</button></div><div data-syn-result="${n}"></div></div>`}).join("")}</div></article></div>`;
+ $("#lpChallengeLesson",host).onchange=e=>{state.ui.challengeLesson=Number(e.target.value);save();renderChallenges()};
+ $("#lpSaveChallenge",host).onclick=()=>{state.simChallenges[i]={predict:$("#lpChallengePredict",host).value,evidence:$("#lpChallengeEvidence",host).value,explain:$("#lpChallengeExplain",host).value,completed:$("#lpChallengePredict",host).value.trim().length>15&&$("#lpChallengeEvidence",host).value.trim().length>15&&$("#lpChallengeExplain",host).value.trim().length>25,at:now()};save();$("#lpChallengeFb",host).innerHTML='<div class="lp-feedback lp-good">Challenge saved. Revisit it later and improve the evidence/explanation.</div>'};
+ $("#lpOpenChallengeLesson",host).onclick=()=>{const nav=$('.nav-button[data-view="sequence"]');if(nav)nav.click();setTimeout(()=>{const steps=$(".seq-step");if(steps[i])steps[i].click()},100)};
+ $("[data-syn-answer]",host).forEach(t=>t.oninput=()=>{const n=Number(t.dataset.synAnswer);state.synoptic[n]=state.synoptic[n]||{};state.synoptic[n].answer=t.value;save()});
+ $("[data-syn-check]",host).forEach(b=>b.onclick=()=>{const n=Number(b.dataset.synCheck),x=synoptic[n],ans=state.synoptic[n]?.answer||"",hits=x.points.map(p=>pointHit(ans,p));state.synoptic[n]={answer:ans,hits,completed:hits.filter(Boolean).length>=Math.ceil(x.points.length*.6)};save();$('[data-syn-result="'+n+'"]',host).innerHTML='<div class="lp-markpoints">'+x.points.map((p,k)=>`<div class="lp-markpoint ${hits[k]?"hit":"miss"}">${hits[k]?"Likely included":"Strengthen"} · ${esc(p)}</div>`).join("")+'</div>'});
+}
+
+/* Feature: virtual practical notebook */
+function buildPracticalNotebook(){
+ const view=$("#view-practical");if(!view||$("#lpPracticalNotebook",view))return;
+ const box=document.createElement("article");box.id="lpPracticalNotebook";box.className="panel pad";box.style.marginTop="16px";
+ const p=state.practical;
+ box.innerHTML=`<div class="section-head"><div><span class="eyebrow">Student practical record</span><h3>Virtual RP12 notebook</h3></div><p class="muted">All writing stays in the app alongside the virtual measurements and graph.</p></div><div class="lp-grid">
+ <div><label class="lp-field"><span>Prediction / hypothesis</span><textarea data-practical="prediction">${esc(p.prediction||"")}</textarea></label><label class="lp-field"><span>Independent, dependent and control variables</span><textarea data-practical="variables">${esc(p.variables||"")}</textarea></label><label class="lp-field"><span>Method / data-quality notes</span><textarea data-practical="method">${esc(p.method||"")}</textarea></label></div>
+ <div><label class="lp-field"><span>Conclusion using inverse-square evidence</span><textarea data-practical="conclusion">${esc(p.conclusion||"")}</textarea></label><label class="lp-field"><span>Evaluation / uncertainties</span><textarea data-practical="evaluation">${esc(p.evaluation||"")}</textarea></label><div class="lp-actions"><button type="button" id="lpCapturePractical">Capture current results summary</button></div><div id="lpPracticalCapture" class="lp-feedback">${esc(p.capture||"No result snapshot saved yet.")}</div></div></div>`;
+ view.appendChild(box);
+ $("[data-practical]",box).forEach(t=>t.oninput=()=>{state.practical[t.dataset.practical]=t.value;save()});
+ $("#lpCapturePractical",box).onclick=()=>{
+   const rows=$("#practicalRows tr").map(tr=>tr.innerText.trim()).filter(Boolean);const fit=$("#fitReadout")?.textContent||"";
+   state.practical.capture=`Saved ${new Date().toLocaleDateString()}: ${rows.length} result rows. Graph/fit: ${fit}`;save();$("#lpPracticalCapture",box).textContent=state.practical.capture;
+ };
+}
 
 /*__LP_FEATURES__*/ 
 })();
