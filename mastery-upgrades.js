@@ -39,16 +39,16 @@ function openSim(name){
    if(full){full.click();return}
  }
  const lab=$('.nav-button[data-view="lab"]');if(lab)lab.click();
- setTimeout(()=>{const b=$(".sim-tab").find(x=>x.textContent.trim()===name);if(b)b.click();},80);
+ setTimeout(()=>{const b=$$(".sim-tab").find(x=>x.textContent.trim()===name);if(b)b.click();},80);
 }
 function openTopic(code){
  const sequenceBtn=$('.nav-button[data-view="sequence"]');
  if(sequenceBtn)sequenceBtn.click();
  setTimeout(()=>{
-  const step=$(".seq-step").find(x=>x.textContent.includes(code));
+  const step=$$(".seq-step").find(x=>x.textContent.includes(code));
   if(step){step.click();step.scrollIntoView({block:"center",behavior:"smooth"});return}
   const course=$('.nav-button[data-view="course"]');if(course)course.click();
-  setTimeout(()=>{const fallback=$(".course-button").find(x=>x.textContent.includes(code));if(fallback)fallback.click()},60);
+  setTimeout(()=>{const fallback=$$(".course-button").find(x=>x.textContent.includes(code));if(fallback)fallback.click()},60);
  },100);
 }
 function weakest(){
