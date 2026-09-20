@@ -245,7 +245,7 @@ function openSim(id){
    const full=$('.nav-button[data-view="rutherfordexp"]');
    if(full){full.click();return;}
  }
- const tabs=$(".sim-tab"); const idx=tabs.findIndex(b=>b.textContent.toLowerCase().includes(simName(id).split(" ")[0].toLowerCase()));
+ const tabs=$$(".sim-tab"); const idx=tabs.findIndex(b=>b.textContent.toLowerCase().includes(simName(id).split(" ")[0].toLowerCase()));
  const labBtn=$('.nav-button[data-view="lab"]'); if(labBtn)labBtn.click();
  if(idx>=0)setTimeout(()=>tabs[idx].click(),60);
 }
