@@ -1,6 +1,7 @@
 (() => {
 "use strict";
 const ROOT_ID="interactiveLessonWorkspace", STORE="aqaNuclearInteractiveV1";
+const VALID_TABS=new Set(["learn","example","practice","reinforce","simulation","exit"]);
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const safe=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let state={};try{state=JSON.parse(localStorage.getItem(STORE)||"{}")}catch{}
@@ -233,7 +234,22 @@ exit:[["Best synoptic habit is to…",["identify model before calculation","comb
 function currentIndex(){
  const b=$(".seq-step.active[data-lesson]"); return b?Number(b.dataset.lesson):0;
 }
-function S(i){if(!state[i])state[i]={pages:{},practice:{},sim:{},worked:0,short:false,reinforce:{vocab:{},sequence:false,explain:false},exitBest:0,tab:"learn"};state[i].reinforce=state[i].reinforce||{vocab:{},sequence:false,explain:false};state[i].reinforce.vocab=state[i].reinforce.vocab||{};return state[i]}
+function S(i){
+ let s=state[i];
+ if(!s||typeof s!=="object")s=state[i]={};
+ s.pages=(s.pages&&typeof s.pages==="object"&&!Array.isArray(s.pages))?s.pages:{};
+ s.practice=(s.practice&&typeof s.practice==="object"&&!Array.isArray(s.practice))?s.practice:{};
+ s.sim=(s.sim&&typeof s.sim==="object"&&!Array.isArray(s.sim))?s.sim:{};
+ s.reinforce=(s.reinforce&&typeof s.reinforce==="object"&&!Array.isArray(s.reinforce))?s.reinforce:{};
+ s.reinforce.vocab=(s.reinforce.vocab&&typeof s.reinforce.vocab==="object"&&!Array.isArray(s.reinforce.vocab))?s.reinforce.vocab:{};
+ s.reinforce.sequence=!!s.reinforce.sequence;
+ s.reinforce.explain=!!s.reinforce.explain;
+ s.worked=Number.isFinite(Number(s.worked))?Math.max(0,Number(s.worked)):0;
+ s.short=!!s.short;
+ s.exitBest=Number.isFinite(Number(s.exitBest))?Math.max(0,Math.min(3,Number(s.exitBest))):0;
+ s.tab=VALID_TABS.has(s.tab)?s.tab:"learn";
+ return s;
+}
 function pct(i){
  const p=P[i],s=S(i);let done=0,total=p.learn.length+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+1;
  done+=Object.values(s.pages).filter(Boolean).length;
@@ -266,9 +282,10 @@ function wire(i){
  renderLearn(i);renderExample(i);renderPractice(i);renderReinforce(i);renderSimulation(i);renderExit(i);
 }
 function showTab(i,tab){
- const root=$("#"+ROOT_ID),s=S(i);s.tab=tab;save();
- $$("[data-il-tab]",root).forEach(b=>b.classList.toggle("active",b.dataset.ilTab===tab));
- $$("[data-il-panel]",root).forEach(x=>x.classList.toggle("active",x.dataset.ilPanel===tab));
+ const root=$("#"+ROOT_ID);if(!root)return;
+ const s=S(i),next=VALID_TABS.has(tab)?tab:"learn";s.tab=next;save();
+ $("[data-il-tab]",root).forEach(b=>b.classList.toggle("active",b.dataset.ilTab===next));
+ $("[data-il-panel]",root).forEach(x=>x.classList.toggle("active",x.dataset.ilPanel===next));
 }
 function renderLearn(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="learn"]'); if(!host)return;
@@ -414,20 +431,32 @@ function updateProgress(i){
  if(pctNode && pctNode.textContent!==label)pctNode.textContent=label;
  if(bar && bar.style.width!==width)bar.style.width=width;
 }
+function safeInject(){
+ try{inject()}
+ catch(err){
+   console.error("Interactive lesson failed to render",err);
+   const main=$(".seq-main");if(!main)return;
+   const old=$("#"+ROOT_ID);if(old)old.remove();
+   const box=document.createElement("section");box.id=ROOT_ID;box.className="il-shell";
+   box.innerHTML='<article class="il-card"><h3>Reload lesson content</h3><p>A saved lesson state from an earlier version caused a loading problem. The lesson can repair itself without resetting the rest of the course.</p><button class="button primary" id="ilRepairReload">Repair and reload this lesson</button></article>';
+   main.prepend(box);
+   $("#ilRepairReload",box).onclick=()=>{state[currentIndex()]={};save();box.remove();safeInject()};
+ }
+}
 function attachSequenceWatcher(){
  const root=$("#seqRoot");
  if(!root){setTimeout(attachSequenceWatcher,100);return}
  const observer=new MutationObserver(mutations=>{
    if(mutations.some(m=>m.type==="childList" && m.target===root)){
-     requestAnimationFrame(()=>inject());
+     requestAnimationFrame(()=>safeInject());
    }
  });
  observer.observe(root,{childList:true});
  document.addEventListener("click",e=>{
    const trigger=e.target.closest("[data-lesson],[data-mode],#seqNext,#seqPrevious,#seqComplete,#teacherComplete,[data-mastery]");
-   if(trigger)setTimeout(inject,0);
+   if(trigger)setTimeout(safeInject,0);
  });
- inject();
+ safeInject();
 }
 setTimeout(attachSequenceWatcher,120);
 })();
