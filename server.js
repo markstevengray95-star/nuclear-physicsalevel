@@ -25,6 +25,7 @@ function safePath(urlPath) {
 }
 
 http.createServer((req,res)=>{
+  if ((req.url || "").split("?")[0] === "/favicon.ico") { res.writeHead(204); return res.end(); }
   let file = safePath(req.url || "/");
   if (!file) { res.writeHead(403); return res.end("Forbidden"); }
   fs.stat(file,(err,stat)=>{
