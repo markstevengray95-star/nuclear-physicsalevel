@@ -229,6 +229,86 @@ practice:[["Which is the best first step in an unfamiliar problem?",["guess a fo
 short:["Explain how nuclear physics combines evidence and models across the topic.","Scattering and diffraction provide experimental evidence for nuclear structure and size; radioactive decay uses probability and exponential models; energy levels explain gamma emission; mass-energy explains binding and reaction energy; neutron-balance models explain fission systems. Each model has its own assumptions and evidence."],
 sim:["Choose any two simulations from different specification sections. State the assumptions of each and explain what evidence/readout would test the model.",["I selected two different models.","I stated assumptions for each.","I linked predictions to evidence/readouts.","I completed a synoptic written explanation."]],
 exit:[["Best synoptic habit is to…",["identify model before calculation","combine every equation at once","ignore assumptions"],0,"Select the relevant model first."],["Data analysis should distinguish…",["observation from inference","mass from all energy","nothing"],0,"Evidence and interpretation are different."],["An A* explanation usually contains…",["precise linked reasoning","keywords only","unsupported opinion"],0,"Cause → physics → effect is stronger."]]}
+
+];
+
+const EXAM=[
+[
+ {marks:3,q:"A nuclide has nucleon number 37 and proton number 17. State the neutron number and explain what would have to remain unchanged for another nuclide to be an isotope of the same element.",points:["N = 20","Proton number Z must remain 17","An isotope may have a different neutron/nucleon number"]},
+ {marks:4,q:"Explain why the nucleus contains almost all the mass of an atom even though its radius is much smaller than the radius of the atom.",points:["Protons and neutrons are in the nucleus","Electrons have much smaller mass than nucleons","Most atomic volume is the electron region/empty space","Nuclear dimensions are about 10⁻¹⁵ m compared with atomic dimensions about 10⁻¹⁰ m"]}
+],
+[
+ {marks:3,q:"State two observations from Rutherford scattering and give one conclusion about atomic structure.",points:["Most alpha particles passed through with little/no deflection","A very small fraction were scattered through large angles/backwards","Positive charge and most mass are concentrated in a tiny nucleus"]},
+ {marks:5,q:"Explain why rare large-angle alpha scattering could not be explained by a diffuse positive charge model.",points:["Alpha particles are positively charged","They are repelled by positive charge","A large deflection requires a large force/momentum change","A large force must act over a very small region","Therefore positive charge is highly concentrated in a small nucleus"]}
+],
+[
+ {marks:3,q:"Compare alpha, beta-minus and gamma radiation in terms of charge and penetration.",points:["Alpha has charge +2e and low penetration","Beta-minus has charge −e and intermediate penetration","Gamma has no charge and is highly penetrating"]},
+ {marks:4,q:"A source passes through paper but is strongly reduced by a thin metal sheet. Explain how an absorption experiment can identify the radiation and why gamma cannot be said to have one exact stopping thickness.",points:["Surviving paper argues against alpha","Strong reduction by thin metal is consistent with beta","Gamma is attenuated probabilistically","Gamma intensity decreases progressively rather than stopping at one universal thickness"]}
+],
+[
+ {marks:3,q:"A corrected count rate is 360 s⁻¹ at 0.25 m. Calculate the expected corrected count rate at 0.50 m for an ideal point source.",points:["Distance doubles","Inverse square gives factor 1/4","Expected corrected count rate = 90 s⁻¹"]},
+ {marks:5,q:"Describe how virtual data from Required Practical 12 should be processed to test the inverse-square law.",points:["Measure/estimate background count rate","Subtract background from measured count rate","Use several distances","Calculate 1/r² for each distance","Plot corrected count rate against 1/r² and look for an approximately straight line through/near the origin"]}
+],
+[
+ {marks:3,q:"Explain why the most suitable radiation for a thickness gauge must have an appropriate penetration rather than simply the greatest penetration.",points:["Detector count must change when thickness changes","If absorbed too strongly little/no radiation reaches detector","If too penetrating count changes too little with thickness"]},
+ {marks:5,q:"Evaluate the use of ionising radiation in medicine using physics rather than a simple list of advantages and disadvantages.",points:["Identify a useful property such as penetration/detectability or ionisation","Link the property to diagnosis or treatment","Recognise ionising radiation can damage biological tissue","Risk depends on exposure factors such as activity/time/distance/shielding/internal exposure","Make a justified risk–benefit conclusion"]}
+],
+[
+ {marks:3,q:"A sample contains 4.0×10¹¹ undecayed nuclei and has decay constant 2.5×10⁻⁵ s⁻¹. Calculate its activity.",points:["Use A = λN","Substitute correct values","A = 1.0×10⁷ Bq"]},
+ {marks:4,q:"Explain how radioactive decay can be random for individual nuclei but predictable for a large sample.",points:["Cannot predict which nucleus decays next","Each nucleus has a constant probability per unit time","Many independent nuclei are present","Statistical average follows a predictable exponential trend"]}
+],
+[
+ {marks:3,q:"A nuclide has half-life 18 min. Calculate its decay constant in min⁻¹.",points:["Use λ = ln2/T½","λ = 0.693/18","λ ≈ 3.85×10⁻² min⁻¹"]},
+ {marks:5,q:"Explain how a graph of ln(activity) against time can be used to determine half-life.",points:["Use ln A = ln A₀ − λt","Graph is linear","Gradient = −λ","Find magnitude of gradient to obtain λ","Use T½ = ln2/λ"]}
+],
+[
+ {marks:4,q:"A pure isotope has sample mass 0.240 g and molar mass 120 g mol⁻¹. Calculate the number of nuclei.",points:["n = m/M","n = 0.240/120 = 2.00×10⁻³ mol","N = nN_A","N ≈ 1.20×10²¹ nuclei"]},
+ {marks:5,q:"Outline the full method for calculating the activity of a pure radioactive sample when mass, molar mass and half-life are supplied.",points:["Convert mass to moles using n=m/M","Convert moles to nuclei using N=nN_A","Convert half-life to decay constant using λ=ln2/T½","Keep time units consistent","Use A=λN"]}
+],
+[
+ {marks:4,q:"State the changes in A and Z for alpha decay and beta-minus decay.",points:["Alpha: A decreases by 4","Alpha: Z decreases by 2","Beta-minus: A unchanged","Beta-minus: Z increases by 1"]},
+ {marks:5,q:"Explain how an N–Z stability graph can be used to discuss alpha, beta-minus, beta-plus/electron-capture and gamma decay.",points:["Stable nuclides occupy a band","Alpha changes N and Z by −2 each","Beta-minus gives N−1, Z+1","Beta-plus/electron capture gives N+1, Z−1","Gamma leaves N and Z unchanged"]}
+],
+[
+ {marks:3,q:"A nuclear transition has energy 0.140 MeV. State the equation used to find the gamma frequency and explain what happens to A and Z.",points:["Use ΔE = hf","A is unchanged","Z is unchanged"]},
+ {marks:4,q:"Explain what a nuclear energy-level diagram shows and why technetium-99m can be useful as a gamma source in diagnosis.",points:["Lines represent discrete nuclear energy states","Downward transition can emit a gamma photon","Photon energy equals level spacing","Gamma can leave the body and be detected externally"]}
+],
+[
+ {marks:4,q:"For a head-on alpha particle, explain the energy argument used to estimate closest approach to a nucleus.",points:["Alpha and nucleus repel electrostatically","Alpha kinetic energy falls as electrostatic potential energy rises","At ideal closest approach instantaneous kinetic energy is zero","Set initial kinetic energy equal to k(2e)(Ze)/r"]},
+ {marks:4,q:"Predict and explain the effect on closest-approach distance of increasing alpha kinetic energy while keeping target Z fixed.",points:["Closest-approach distance decreases","More initial kinetic energy is available","Alpha can move further into the repulsive electric potential","From r ∝ 1/E for fixed Z"]}
+],
+[
+ {marks:4,q:"Explain why high-energy electrons can be used to determine nuclear radius.",points:["Electrons have de Broglie wavelength λ=h/p","High momentum gives a very short wavelength","Wavelength can be comparable with nuclear dimensions","Diffraction/scattering pattern depends on nuclear size"]},
+ {marks:4,q:"For fixed electron wavelength, a second nucleus has its first diffraction minimum at a smaller angle. Explain what this indicates.",points:["Smaller diffraction angle means narrower pattern","Angular scale is inversely related to scattering-object size","Second nucleus has larger radius","Conclusion assumes wavelength is unchanged"]}
+],
+[
+ {marks:3,q:"A nucleus has A=64. Another has A=8 times larger. Use R=r₀A^(1/3) to state the factor by which radius changes.",points:["A changes by factor 8","Cube root of 8 is 2","Radius changes by factor 2"]},
+ {marks:5,q:"Show why R=r₀A^(1/3) provides evidence that nuclear density is approximately constant.",points:["Cube relationship to obtain R³ ∝ A","Nuclear volume V ∝ R³","Therefore V ∝ A","Nuclear mass is approximately proportional to A","ρ=m/V is therefore approximately independent of A"]}
+],
+[
+ {marks:3,q:"A nucleus has mass defect 0.025 u. Calculate its binding energy in MeV.",points:["Use 1 u = 931.5 MeV","0.025×931.5","Binding energy ≈ 23.3 MeV"]},
+ {marks:5,q:"Explain the physical meaning of mass defect and binding energy.",points:["Bound nucleus has less mass than separated nucleons","Mass defect is the difference","Binding energy is energy required to separate nucleus completely","Energy difference obeys ΔE=Δmc²","Lower mass-energy corresponds to a bound system"]}
+],
+[
+ {marks:4,q:"Explain, using the binding-energy-per-nucleon curve, why fusion of light nuclei can release energy.",points:["Light nuclei are on rising part of curve","Fusion products can have greater BE per nucleon","Products are more tightly bound","Increase in binding corresponds to lower rest mass/energy release"]},
+ {marks:4,q:"Explain why heavy-nucleus fission can release energy and state what is needed for an exact reaction-energy calculation.",points:["Medium-mass products can have greater BE per nucleon","Products are more tightly bound","Mass decreases and energy is released","Exact energy needs initial/final nuclear or atomic mass data used consistently"]}
+],
+[
+ {marks:4,q:"Explain qualitatively what determines whether an induced-fission chain reaction dies away or sustains itself.",points:["Fission releases additional neutrons","Some neutrons can induce later fissions","Neutrons are also lost by escape/other absorption","Sustained chain requires production to balance or exceed losses"]},
+ {marks:4,q:"Explain the idea of critical mass without using a numerical value.",points:["Relates to whether a chain can sustain itself","Amount/geometry affects neutron escape","Too much neutron loss makes chain die away","Critical condition is where useful neutron production can balance losses"]}
+],
+[
+ {marks:5,q:"State the functions of moderator, control rods and coolant, and give one factor affecting material choice for any one component.",points:["Moderator slows neutrons","Control rods absorb neutrons","Coolant transfers thermal energy","Material choice may depend on neutron absorption, collision effectiveness, thermal or chemical properties","Correct factor linked to relevant component"]},
+ {marks:4,q:"Use a simple collision model to explain why moderator-nucleus mass matters.",points:["Neutron loses kinetic energy in collisions","Energy is transferred to moderator nucleus","Transfer is more effective when masses are not extremely different","Moderator should also avoid excessive neutron absorption"]}
+],
+[
+ {marks:4,q:"Explain the physics purpose of shielding, remote handling and emergency shutdown in nuclear power.",points:["Shielding attenuates radiation","Remote handling increases separation/reduces exposure","Shutdown reduces sustained neutron multiplication","These controls address different parts of the hazard"]},
+ {marks:5,q:"Evaluate one benefit and two challenges of nuclear power using relevant nuclear physics.",points:["Identify a benefit such as high energy density/reliable low-operational-carbon generation","Explain radioactive waste using activity/half-life","Explain accident/exposure risk or need for engineered control","Distinguish probability from consequence where relevant","Give a justified conclusion based on the evidence"]}
+],
+[
+ {marks:5,q:"A problem gives sample mass, molar mass, half-life and elapsed time. Write a complete equation plan for finding current activity.",points:["n=m/M","N₀=nN_A","λ=ln2/T½","N=N₀e⁻ˡᵗ or A=A₀e⁻ˡᵗ","Current activity A=λN with consistent units"]},
+ {marks:6,q:"Explain how experimental evidence and mathematical models combine across nuclear physics. Refer to at least three different parts of the topic.",points:["Rutherford scattering gives evidence for a compact nucleus","Electron diffraction/closest approach gives nuclear size evidence","Random decay is modelled statistically/exponentially","Mass-energy/binding models explain nuclear energy release","Fission/reactor behaviour uses neutron balance and collision ideas","Answer distinguishes evidence, model assumptions and conclusions"]}
+]
 ];
 
 function currentIndex(){
@@ -251,7 +331,8 @@ function S(i){
  return s;
 }
 function pct(i){
- const p=P[i],s=S(i);let done=0,total=p.learn.length+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+1;
+ const p=P[i],s=S(i);let done=0,total=3+p.learn.length+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+EXAM[i].length+1;
+ done+=Object.values(s.starter).filter(Boolean).length;
  done+=Object.values(s.pages).filter(Boolean).length;
  if(s.worked>=p.worked.steps.length)done++;
  done+=Object.values(s.practice).filter(Boolean).length;
@@ -260,6 +341,7 @@ function pct(i){
  done+=Object.values(s.reinforce.vocab).filter(Boolean).length;
  if(s.reinforce.sequence)done++;
  if(s.reinforce.explain)done++;
+ done+=Object.values(s.exam).filter(v=>v&&v.completed).length;
  if(s.exitBest>=2)done++;
  return Math.round(100*done/total);
 }
@@ -270,8 +352,8 @@ function inject(){
  if(old)old.remove();
  const p=P[i],s=S(i);const wrap=document.createElement("section");wrap.id=ROOT_ID;wrap.className="il-shell";wrap.dataset.lesson=i;
  wrap.innerHTML='<div class="il-head"><div><span class="eyebrow">Complete student lesson</span><h3>'+safe(p.title)+'</h3><p>'+p.intro+'</p></div><div class="il-progress"><strong id="ilPct">'+pct(i)+'% lesson progress</strong><div class="il-track"><i id="ilBar" style="width:'+pct(i)+'%"></i></div></div></div>'+
- '<div class="il-tabs">'+["learn","example","practice","reinforce","simulation","exit"].map((t,n)=>'<button class="il-tab '+(s.tab===t?"active":"")+'" data-il-tab="'+t+'">'+(n+1)+'. '+({learn:"Learn",example:"Worked example",practice:"Practice",reinforce:"Reinforce",simulation:"Simulation task",exit:"Exit ticket"}[t])+'</button>').join("")+'</div>'+
- '<div class="il-body"><div class="il-panel" data-il-panel="learn"></div><div class="il-panel" data-il-panel="example"></div><div class="il-panel" data-il-panel="practice"></div><div class="il-panel" data-il-panel="reinforce"></div><div class="il-panel" data-il-panel="simulation"></div><div class="il-panel" data-il-panel="exit"></div></div>';
+ '<div class="il-tabs">'+["starter","learn","example","practice","reinforce","simulation","exam","exit"].map((t,n)=>'<button class="il-tab '+(s.tab===t?"active":"")+'" data-il-tab="'+t+'">'+(n+1)+'. '+({starter:"Starter",learn:"Learn",example:"Worked example",practice:"Practice",reinforce:"Reinforce",simulation:"Simulation task",exam:"Exam questions",exit:"Exit ticket"}[t])+'</button>').join("")+'</div>'+
+ '<div class="il-body"><div class="il-panel" data-il-panel="starter"></div><div class="il-panel" data-il-panel="learn"></div><div class="il-panel" data-il-panel="example"></div><div class="il-panel" data-il-panel="practice"></div><div class="il-panel" data-il-panel="reinforce"></div><div class="il-panel" data-il-panel="simulation"></div><div class="il-panel" data-il-panel="exam"></div><div class="il-panel" data-il-panel="exit"></div></div>';
  const obj=$(".seq-objectives",main); if(obj)obj.insertAdjacentElement("afterend",wrap); else main.prepend(wrap);
  wire(i);
  showTab(i,s.tab);
@@ -279,13 +361,39 @@ function inject(){
 function wire(i){
  const root=$("#"+ROOT_ID);
  $$("[data-il-tab]",root).forEach(b=>b.addEventListener("click",()=>showTab(i,b.dataset.ilTab)));
- renderLearn(i);renderExample(i);renderPractice(i);renderReinforce(i);renderSimulation(i);renderExit(i);
+ renderStarter(i);renderLearn(i);renderExample(i);renderPractice(i);renderReinforce(i);renderSimulation(i);renderExam(i);renderExit(i);
 }
 function showTab(i,tab){
  const root=$("#"+ROOT_ID);if(!root)return;
  const s=S(i),next=VALID_TABS.has(tab)?tab:"learn";s.tab=next;save();
  $("[data-il-tab]",root).forEach(b=>b.classList.toggle("active",b.dataset.ilTab===next));
  $("[data-il-panel]",root).forEach(x=>x.classList.toggle("active",x.dataset.ilPanel===next));
+}
+
+function starterQuestions(i){
+ const p=P[i],prev=i>0?P[i-1]:p;
+ const current=p.practice[0],prior=prev.exit[0];
+ const vocab=p.vocab[0];
+ const defs=[vocab[1],...p.vocab.slice(1,3).map(v=>v[1])];
+ return [
+  {q:current[0],opts:current[1],a:current[2],why:current[3],tag:"Current knowledge"},
+  {q:i>0?"Retrieval from the previous lesson: "+prior[0]:"Foundation retrieval: "+p.exit[1][0],opts:i>0?prior[1]:p.exit[1][1],a:i>0?prior[2]:p.exit[1][2],why:i>0?prior[3]:p.exit[1][3],tag:"Previous learning"},
+  {q:"Which definition best matches “"+vocab[0]+"”?",opts:defs,a:0,why:vocab[0]+": "+vocab[1],tag:"Key vocabulary"}
+ ];
+}
+function renderStarter(i){
+ const p=P[i],s=S(i),host=$('[data-il-panel="starter"]');if(!host)return;
+ const qs=starterQuestions(i);
+ host.innerHTML='<div class="il-reinforce-head"><div><span class="eyebrow">Do now · 5–8 min</span><h4>Interactive starter</h4><p>Answer from memory before reading the lesson. Immediate feedback helps activate prior knowledge.</p></div><span class="il-badge">'+Object.values(s.starter).filter(Boolean).length+'/3 complete</span></div>'+
+ qs.map((q,n)=>'<article class="il-q il-starter-q" data-sq="'+n+'"><span class="il-badge">'+q.tag+'</span><h4>'+(n+1)+'. '+q.q+'</h4><div class="il-options">'+q.opts.map((o,j)=>'<button data-so="'+j+'">'+o+'</button>').join("")+'</div><div class="il-feedback '+(s.starter[n]?'':'hidden')+'">'+(s.starter[n]?'Completed — '+q.why:'')+'</div></article>').join("")+
+ '<div class="il-actions"><button class="button primary" id="ilStarterNext">Start learning →</button></div>';
+ $$(".il-starter-q",host).forEach((box,n)=>$$("[data-so]",box).forEach(b=>b.onclick=()=>{
+   const q=qs[n],choice=Number(b.dataset.so),ok=choice===q.a;
+   s.starter[n]=true;save();
+   $$("[data-so]",box).forEach((x,j)=>{x.disabled=true;if(j===q.a)x.classList.add("correct");if(j===choice&&!ok)x.classList.add("wrong")});
+   const fb=$(".il-feedback",box);fb.classList.remove("hidden");fb.textContent=(ok?"Correct. ":"Review: ")+q.why;updateProgress(i);
+ }));
+ $("#ilStarterNext",host).onclick=()=>showTab(i,"learn");
 }
 function renderLearn(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="learn"]'); if(!host)return;
@@ -390,7 +498,32 @@ function renderSimulation(i){
  $$("[data-sc]",host).forEach(c=>c.onchange=()=>{s.sim[c.dataset.sc]=c.checked;save();updateProgress(i)});
  $("#ilOpenSim",host).onclick=()=>{const b=$(".seq-phase [data-open-sim]");if(b)b.click();else{const lab=$('.nav-button[data-view="lab"]');if(lab)lab.click()}};
  $("#ilFormula",host).onclick=()=>{const b=$('.nav-button[data-view="formula"]');if(b)b.click()};
- $("#ilToExit",host).onclick=()=>showTab(i,"exit");
+ $("#ilToExit",host).textContent="Continue to exam questions →";$("#ilToExit",host).onclick=()=>showTab(i,"exam");
+}
+
+function renderExam(i){
+ const qs=EXAM[i],s=S(i),host=$('[data-il-panel="exam"]');if(!host)return;
+ const completed=Object.values(s.exam).filter(v=>v&&v.completed).length;
+ host.innerHTML='<div class="il-reinforce-head"><div><span class="eyebrow">Original AQA-style practice</span><h4>Exam questions</h4><p>Write your answer first. Then reveal the mark points and self-mark each point you genuinely included.</p></div><span class="il-badge">'+completed+'/'+qs.length+' completed</span></div>'+
+ qs.map((q,n)=>'<article class="il-card il-exam-card" data-exq="'+n+'"><div class="il-exam-head"><div><span class="il-task-number">'+(n+1)+'</span><strong>'+q.marks+' marks</strong></div><span class="il-badge">'+(s.exam[n]?.completed?'Completed':'Not marked')+'</span></div><h4>'+q.q+'</h4><textarea class="il-long-answer" data-exam-answer="'+n+'" placeholder="Write a full exam answer here before opening the mark points.">'+safe(s.exam[n]?.answer||"")+'</textarea><div class="il-actions"><button class="button primary" data-reveal-ms="'+n+'">Reveal mark points</button></div><div class="il-mark-scheme '+(s.exam[n]?.revealed?'':'hidden')+'" data-ms="'+n+'"><h4>Self-mark</h4><p class="muted">Tick only points that are clearly present in your answer.</p>'+q.points.map((p,k)=>'<label class="il-check"><input type="checkbox" data-mp="'+n+'-'+k+'" '+(s.exam[n]?.points?.[k]?'checked':'')+'> <span>'+p+'</span></label>').join("")+'<div class="il-exam-score" data-score="'+n+'"></div><button class="button" data-save-exam="'+n+'">Save score</button></div></article>').join("")+
+ '<div class="il-actions"><button class="button primary" id="ilExamNext">Continue to exit ticket →</button></div>';
+ $$("[data-exam-answer]",host).forEach(t=>t.oninput=()=>{const n=Number(t.dataset.examAnswer);s.exam[n]=s.exam[n]||{};s.exam[n].answer=t.value;save()});
+ $$("[data-reveal-ms]",host).forEach(b=>b.onclick=()=>{const n=Number(b.dataset.revealMs);s.exam[n]=s.exam[n]||{};s.exam[n].revealed=true;save();$('[data-ms="'+n+'"]',host).classList.remove("hidden")});
+ $$("[data-save-exam]",host).forEach(b=>b.onclick=()=>saveExamScore(i,Number(b.dataset.saveExam)));
+ qs.forEach((_,n)=>updateExamScoreDisplay(i,n));
+ $("#ilExamNext",host).onclick=()=>showTab(i,"exit");
+}
+function saveExamScore(i,n){
+ const s=S(i),q=EXAM[i][n],checks=$$('[data-mp^="'+n+'-"]'),points=checks.map(c=>c.checked);
+ s.exam[n]=s.exam[n]||{};s.exam[n].points=points;s.exam[n].score=points.filter(Boolean).length;s.exam[n].completed=true;save();
+ updateExamScoreDisplay(i,n);updateProgress(i);
+ const card=$('[data-exq="'+n+'"]');const badge=$(".il-badge",card);if(badge)badge.textContent="Completed";
+}
+function updateExamScoreDisplay(i,n){
+ const host=$('[data-score="'+n+'"]');if(!host)return;const s=S(i),q=EXAM[i][n],saved=s.exam[n];
+ const checked=$$('[data-mp^="'+n+'-"]').filter(c=>c.checked).length;
+ const score=saved?.completed?saved.score:checked;
+ host.innerHTML='<strong>'+score+' / '+q.marks+' marks</strong><span>'+(score===q.marks?'Excellent — all mark points are present.':score>=Math.ceil(q.marks*.6)?'Secure. Improve precision to gain the remaining marks.':'Review the lesson and strengthen the reasoning before retrying.')+'</span>';
 }
 function renderExit(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="exit"]');if(!host)return;
@@ -416,7 +549,7 @@ function showExitResult(i,score,stored){
  host.innerHTML='<div class="il-exit-score"><div class="il-score-ring '+(pass?"pass":"retry")+'">'+score+'/3</div><div class="il-status '+(pass?"pass":"retry")+'"><strong>'+(pass?"Exit ticket passed":"Not secure yet")+'</strong><div>'+(pass?"You have met the exit-ticket threshold. Finish any unticked lesson activities to complete the lesson.":"Review the teaching pages and retry. Your best score is saved.")+'</div></div></div>'+(pass&&isComplete(i)?'<div class="il-complete-banner"><strong>Lesson mastered.</strong> All learning, practice, simulation evidence and exit-ticket requirements are complete.</div>':'');
 }
 function isComplete(i){
- const p=P[i],s=S(i);return Object.values(s.pages).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && s.exitBest>=2;
+ const p=P[i],s=S(i);return Object.values(s.starter).filter(Boolean).length>=3 && Object.values(s.pages).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && Object.values(s.exam).filter(v=>v&&v.completed).length>=EXAM[i].length && s.exitBest>=2;
 }
 function syncSequenceCompletion(){
  setTimeout(()=>{
