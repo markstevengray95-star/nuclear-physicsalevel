@@ -208,20 +208,23 @@ function render(){
 }
 function lessonHTML(l){
  const m=masteryFor(l.id), next=nextRecommended();
- return '<section class="seq-hero"><span class="eyebrow">'+l.tier+' · '+l.code+'</span><h2>'+(state.current+1)+'. '+l.title+'</h2><p class="muted">Designed for a '+l.minutes+'-minute lesson. Progress from knowledge → model → exam application → mastery.</p><div class="seq-meta"><span>'+l.minutes+' minutes</span><span>'+l.objectives.length+' objectives</span><span>Simulation linked</span><span>Exam task</span></div></section>'+
- '<div class="seq-objectives">'+
-  '<section class="seq-card"><h3>Learning objectives</h3><ul>'+l.objectives.map(x=>'<li>'+x+'</li>').join("")+'</ul></section>'+
-  '<section class="seq-card"><h3>Success criteria</h3><ul>'+l.success.map(x=>'<li>'+x+'</li>').join("")+'</ul></section>'+
- '</div>'+
+ const studentRoadmap='<section class="seq-card student-only seq-roadmap"><h3>Student lesson pathway</h3><div class="seq-roadmap-steps"><span>1 · Starter / retrieval</span><span>2 · Objectives & core knowledge</span><span>3 · Learn in small chunks</span><span>4 · Knowledge checks</span><span>5 · Worked example</span><span>6 · Guided practice</span><span>7 · Independent practice</span><span>8 · Simulation / activity</span><span>9 · Exam questions</span><span>10 · Exit ticket</span></div><p class="muted">Complete the interactive lesson above in order. Every question can be answered and checked inside the app.</p></section>';
+ const teacherDelivery=state.mode==="teacher"?(
  '<div class="seq-delivery">'+
  phase("Do now / retrieval","5–8 min",'<ul>'+l.retrieval.map(x=>'<li>'+x+'</li>').join("")+'</ul>')+
  phase("Teach and model","15–20 min",'<ul>'+l.teach.map(x=>'<li>'+x+'</li>').join("")+'</ul>')+
  phase("Interactive simulation","10–15 min",'<p>Open the linked <strong>'+simName(l.sim)+'</strong> model. Change variables deliberately, predict first, then compare the result with the readout.</p><button class="button" data-open-sim="'+l.sim+'">Open simulation</button>')+
  phase("Exam application","10–15 min",'<p><strong>Exam task:</strong> '+l.exam+'</p><p class="muted">Require explicit physics vocabulary and a complete reasoning chain rather than keyword spotting.</p>')+
  phase("A* extension","5–10 min",'<p>'+l.astar+'</p>')+
+ '</div>'):studentRoadmap;
+ return '<section class="seq-hero"><span class="eyebrow">'+l.tier+' · '+l.code+'</span><h2>'+(state.current+1)+'. '+l.title+'</h2><p class="muted">Designed for a '+l.minutes+'-minute lesson. Students move from retrieval → core knowledge → guided checks → independent application → exam practice.</p><div class="seq-meta"><span>'+l.minutes+' minutes</span><span>'+l.objectives.length+' objectives</span><span>Interactive tasks</span><span>Exam practice</span></div></section>'+
+ '<div class="seq-objectives">'+
+  '<section class="seq-card"><h3>Learning objectives</h3><ul>'+l.objectives.map(x=>'<li>'+x+'</li>').join("")+'</ul></section>'+
+  '<section class="seq-card"><h3>Success criteria</h3><ul>'+l.success.map(x=>'<li>'+x+'</li>').join("")+'</ul></section>'+
  '</div>'+
+ teacherDelivery+
  '<section class="seq-card" style="margin-top:12px"><h3>Mastery check</h3><div class="mastery-row"><span>Current level</span><div class="mastery-dots">'+[1,2,3].map(n=>'<button class="mastery-dot '+(m>=n?"on":"")+'" data-mastery="'+n+'" title="Set mastery '+n+'"></button>').join("")+'</div><strong>'+["Not checked","Developing","Secure","Exam-ready"][m]+'</strong></div><p class="mastery-label">1 = developing · 2 = secure · 3 = can apply independently in unfamiliar exam contexts</p></section>'+
- '<div class="seq-recommend student-only"><strong>Recommended next:</strong> '+(state.done[l.id]?(next===state.current?"Revisit weak mastery areas or attempt the A* challenge.":sequence[next].title):"Complete this lesson, then move to "+(sequence[Math.min(state.current+1,sequence.length-1)].title))+'</div>'+
+ '<div class="seq-recommend student-only"><strong>Recommended next:</strong> '+(state.done[l.id]?(next===state.current?"Revisit weak mastery areas or attempt the A* challenge.":sequence[next].title):"Complete the interactive lesson, then move to "+(sequence[Math.min(state.current+1,sequence.length-1)].title))+'</div>'+
  '<div class="teacher-panel"><section class="seq-card"><h3>Teacher delivery controls</h3><div class="teacher-tools"><div class="teacher-tool"><strong>Presentation mode</strong><span>Large classroom view of lesson phases.</span><button class="button" id="startPresent">Present lesson</button></div><div class="teacher-tool"><strong>Lesson status</strong><span>Mark the class sequence point.</span><button class="button" id="teacherComplete">'+(state.done[l.id]?"Reopen lesson":"Mark delivered")+'</button></div><div class="teacher-tool"><strong>Teaching note</strong><span>Saved on this device.</span><textarea id="teacherNote" style="width:100%;min-height:72px;background:#071522;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px">'+escapeHTML(state.notes[l.id]||"")+'</textarea></div></div></section></div>'+
  '<div class="seq-actions"><button class="button primary" id="seqComplete">'+(state.done[l.id]?"Mark incomplete":"Mark lesson complete")+'</button><button class="button" id="seqPrevious" '+(state.current===0?"disabled":"")+'>← Previous lesson</button><button class="button" id="seqNext" '+(state.current===sequence.length-1?"disabled":"")+'>Next lesson →</button></div>';
 }
