@@ -368,8 +368,8 @@ function wire(i){
 function showTab(i,tab){
  const root=$("#"+ROOT_ID);if(!root)return;
  const s=S(i),next=VALID_TABS.has(tab)?tab:"learn";s.tab=next;save();
- $("[data-il-tab]",root).forEach(b=>b.classList.toggle("active",b.dataset.ilTab===next));
- $("[data-il-panel]",root).forEach(x=>x.classList.toggle("active",x.dataset.ilPanel===next));
+ $$("[data-il-tab]",root).forEach(b=>b.classList.toggle("active",b.dataset.ilTab===next));
+ $$("[data-il-panel]",root).forEach(x=>x.classList.toggle("active",x.dataset.ilPanel===next));
 }
 
 function starterQuestions(i){
