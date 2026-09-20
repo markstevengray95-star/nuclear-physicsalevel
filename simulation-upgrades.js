@@ -56,7 +56,35 @@ const profiles={
   scale:"The reactor diagram is functional rather than a blueprint of a real plant.",
   challenge:"Which component primarily slows neutrons?",
   answers:["Moderator","Control rods","Coolant"],correct:0
- }
+ },
+  "Nuclear energy levels and gamma emission":{
+  what:"Discrete nuclear excited states and gamma emission when a nucleus moves to a lower energy state.",
+  scale:"Energy levels are representative teaching values; the transition rule and ΔE = hf relationship are the physics focus.",
+  key:"A and Z are unchanged by gamma emission. Photon energy equals the nuclear level spacing.",
+  challenge:"If the upper and lower levels are farther apart, what happens to gamma frequency?",
+  answers:["It increases","It decreases","It is unchanged"],correct:0
+ },
+ "Alpha closest approach":{
+  what:"A head-on alpha particle converting kinetic energy into electrostatic potential energy near a positive nucleus.",
+  scale:"The drawn nucleus and trajectory are enlarged. The numerical distance uses the Coulomb closest-approach model.",
+  key:"At closest approach in the ideal head-on model: Eₖ = k(2e)(Ze)/r.",
+  challenge:"For the same target Z, what happens to closest approach when alpha energy increases?",
+  answers:["It decreases","It increases","It stays the same"],correct:0
+ },
+ "Electron diffraction by nuclei":{
+  what:"Matter-wave diffraction of high-energy electrons by nuclear charge distribution, used to infer nuclear radius.",
+  scale:"The intensity pattern is a teaching approximation rather than a precision scattering calculation.",
+  key:"For fixed electron wavelength, a larger nuclear radius shifts diffraction minima to smaller angles.",
+  challenge:"If nuclear radius increases at fixed wavelength, the first minimum moves to…",
+  answers:["A smaller angle","A larger angle","The same angle"],correct:0
+ },
+ "Neutron moderation by collisions":{
+  what:"Reduction of neutron kinetic energy through repeated collisions with moderator nuclei.",
+  scale:"The collision sequence is simplified and does not model a particular reactor geometry or material in detail.",
+  key:"Moderation means slowing neutrons. Efficient energy transfer occurs when target and neutron masses are not extremely different.",
+  challenge:"Which moderator-nucleus mass gives more effective energy transfer per collision?",
+  answers:["A mass closer to the neutron mass","A nucleus hundreds of times heavier","Mass makes no difference"],correct:0
+ },
 };
 function ensure(){
  const wrap=$(".viewer-wrap"); if(!wrap||$(".sim-overlay-canvas")) return;
@@ -79,7 +107,19 @@ function ensure(){
 function title(){return ($("#simTitle")?.textContent||"").trim()}
 function renderInfo(){
  const p=profiles[title()]||{what:"Interactive AQA nuclear-physics teaching model.",scale:"Visual scale is schematic.",challenge:"Predict the effect of changing the main control.",answers:["Increase","Decrease","No change"],correct:0};
- const g=$("#simInsightGrid");if(g)g.innerHTML='<div class="sim-insight"><strong>Physics being modelled</strong><span>'+p.what+'</span></div><div class="sim-insight"><strong>Model limitation</strong><span>'+p.scale+'</span></div><div class="sim-insight"><strong>How to use it</strong><span>Predict first, change one variable, observe the model, then explain the change with physics.</span></div>';
+ const keyByTitle={
+  "Rutherford scattering":"Most alpha particles pass straight through; rare large-angle scattering implies a tiny dense positive nucleus.",
+  "Radiation and absorption":"Alpha is strongly ionising/weakly penetrating; beta is intermediate; gamma is highly penetrating and attenuated progressively.",
+  "Random decay and half-life":"A = λN, N = N₀e⁻ˡᵗ and T½ = ln2/λ. Individual decays are random; populations are predictable.",
+  "N–Z stability map":"Alpha changes A by −4 and Z by −2; β⁻ gives Z+1; β⁺/electron capture give Z−1; gamma leaves A and Z unchanged.",
+  "Nuclear radius and density":"R = r₀A¹ᐟ³. Since volume ∝ R³ ∝ A and mass ∝ A, nuclear density is approximately constant.",
+  "Mass defect and binding energy":"Binding energy = Δmc²; 1 u = 931.5 MeV. Binding energy per nucleon compares how tightly nuclei are bound.",
+  "Binding-energy curve":"Fusion of light nuclei and fission of heavy nuclei can release energy by moving products toward higher binding energy per nucleon.",
+  "Fission chain reaction":"A chain reaction depends on generation-to-generation neutron production versus losses.",
+  "Thermal reactor systems":"Moderator slows neutrons; control rods absorb neutrons; coolant transfers heat; shielding reduces exposure."
+ };
+ const key=p.key||keyByTitle[title()]||"Use the model to connect the visual change to the specification equation or causal relationship.";
+ const g=$("#simInsightGrid");if(g)g.innerHTML='<div class="sim-insight"><strong>Physics being modelled</strong><span>'+p.what+'</span></div><div class="sim-insight"><strong>AQA key information</strong><span>'+key+'</span></div><div class="sim-insight"><strong>What is schematic</strong><span>'+p.scale+'</span></div><div class="sim-insight"><strong>How to investigate</strong><span>Predict first, change one variable only, observe the readout, then explain the result using the equation or interaction.</span></div>';
  const box=$("#simUpgradeChallenge");if(!box)return;
  if(!challengeMode){box.innerHTML="";return}
  box.className="sim-challenge";box.innerHTML='<h3>Simulation challenge</h3><p>'+p.challenge+'</p><div class="prediction-row">'+p.answers.map((a,i)=>'<button data-pred="'+i+'">'+a+'</button>').join("")+'</div><div class="small muted" id="predFeedback">Choose before changing the control.</div>'+(dataMode?dataPanel():"");
@@ -95,7 +135,11 @@ function dataPanel(){
   "Nuclear radius and density":[["Quantity","Relationship"],["R","r₀A¹ᐟ³"],["volume","∝ A"]],
   "Mass defect and binding energy":[["Quantity","Relationship"],["ΔE","Δmc²"],["1 u","931.5 MeV"]],
   "Binding-energy curve":[["Region","Energy route"],["light nuclei","fusion toward peak"],["heavy nuclei","fission toward peak"]],
-  "Thermal reactor systems":[["System","Main role"],["moderator","slow neutrons"],["control rods","absorb neutrons"],["coolant","transfer thermal energy"]]
+  "Thermal reactor systems":[["System","Main role"],["moderator","slow neutrons"],["control rods","absorb neutrons"],["coolant","transfer thermal energy"]],
+  "Nuclear energy levels and gamma emission":[["Quantity","Relationship"],["photon energy","ΔE = hf"],["gamma emission","A and Z unchanged"]],
+  "Alpha closest approach":[["Change","Effect"],["alpha energy ↑","closest approach ↓"],["target Z ↑","closest approach ↑"]],
+  "Electron diffraction by nuclei":[["Change","Effect"],["nuclear radius ↑","1st minimum angle ↓"],["electron wavelength ↑","diffraction angle ↑"]],
+  "Neutron moderation by collisions":[["Idea","Meaning"],["moderator","slows neutrons"],["similar masses","better energy transfer"]]
  }[title()]||[["Mode","Purpose"],["prediction","before changing variable"],["observation","what changes"],["explanation","why it changes"]];
  return '<div class="sim-mini-data"><table>'+rows.map((r,i)=>'<tr>'+r.map(x=>(i===0?'<th>'+x+'</th>':'<td>'+x+'</td>')).join("")+'</tr>').join("")+'</table></div>'
 }
