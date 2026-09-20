@@ -210,6 +210,7 @@ function renderToday(){
  </div>
  <div class="lp-grid" style="margin-top:12px"><article class="lp-card"><h3>Your 5 things to revise today</h3><div class="lp-list">${rev.length?rev.map(x=>`<div class="lp-list-item"><div><strong>${esc(x.title)}</strong><small>${esc(x.type)} · ${esc(x.detail)}</small></div><button type="button" data-open-lesson="${x.lesson}">Open</button></div>`).join(""):'<p class="muted">Complete the diagnostic or some lesson checks and this list will personalise itself.</p>'}</div></article>
  <article class="lp-card"><h3>Diagnostic snapshot</h3><div class="lp-score"><div class="lp-score-ring ${diag.pct>=70?"good":"warn"}">${diag.pct}%</div><div><strong>${diag.correct} / ${diag.done}</strong><p class="muted">correct from ${diag.total} topic checks attempted.</p></div></div><div class="lp-actions"><button type="button" data-lp-go="diagnostic" class="primary">Open diagnostic</button><button type="button" data-lp-go="retrieval">Retrieval practice</button></div></article></div>`;
+ host.insertAdjacentHTML("beforeend",assignmentStudentHTML());bindAssignmentStudent(host);
  bindOpenLessons(host);
 }
 function renderDiagnostic(){
@@ -259,7 +260,7 @@ function renderPlatformTab(tab){
  state.ui.tab=tab;save();
  $$(".lp-tab").forEach(b=>b.classList.toggle("active",b.dataset.lpTab===tab));
  $$(".lp-panel").forEach(p=>p.classList.toggle("active",p.id===`lp-${tab}`));
- ({today:renderToday,diagnostic:renderDiagnostic,retrieval:renderRetrieval,misconceptions:renderMisconceptions,confidence:renderConfidence,calculations:renderCalculations,challenges:renderChallenges}[tab]||(()=>{}))();
+ ({today:renderToday,diagnostic:renderDiagnostic,retrieval:renderRetrieval,misconceptions:renderMisconceptions,confidence:renderConfidence,calculations:renderCalculations,challenges:renderChallenges,glossary:renderGlossary,paper:renderPaper,teacher:renderTeacher,reports:renderReports}[tab]||(()=>{}))();
 }
 function buildPlatformView(){
  const nav=$(".main-nav"),main=$("main");if(!nav||!main)return;
@@ -366,6 +367,82 @@ function buildPracticalNotebook(){
    const rows=$("#practicalRows tr").map(tr=>tr.innerText.trim()).filter(Boolean);const fit=$("#fitReadout")?.textContent||"";
    state.practical.capture=`Saved ${new Date().toLocaleDateString()}: ${rows.length} result rows. Graph/fit: ${fit}`;save();$("#lpPracticalCapture",box).textContent=state.practical.capture;
  };
+}
+
+
+/* Feature: progress/assignment codes and teacher dashboard */
+function encodeCode(obj){try{return btoa(unescape(encodeURIComponent(JSON.stringify(obj))))}catch{return ""}}
+function decodeCode(code){try{return JSON.parse(decodeURIComponent(escape(atob(String(code).trim()))))}catch{return null}}
+function progressPayload(name="Student"){
+ return {type:"nuclear-progress-v1",name,at:now(),lessons:lessons().map((p,i)=>({title:p.title,progress:lessonProgress(i),complete:!!C()?.isComplete(i)})),diagnostic:state.diagnostic,misconceptions:state.misconceptions,confidence:calibration(),synoptic:state.synoptic};
+}
+function assignmentStudentHTML(){
+ const a=state.assignments.student;
+ if(!a)return `<article class="lp-card"><h3>Assignment</h3><p class="muted">Paste an assignment code from your teacher to create a focused task list.</p><label class="lp-field"><span>Assignment code</span><textarea id="lpAssignmentLoad" placeholder="Paste code"></textarea></label><div class="lp-actions"><button type="button" id="lpLoadAssignment">Load assignment</button></div><div id="lpAssignmentLoadFb"></div></article>`;
+ const progress=a.lessons.map(i=>({i,p:lessonProgress(i)}));const done=progress.filter(x=>x.p>=a.minProgress).length;
+ return `<article class="lp-card"><h3>Current assignment: ${esc(a.title||"Teacher assignment")}</h3><p class="muted">Due ${esc(a.due||"not set")} · target ${a.minProgress}% lesson progress.</p><div class="lp-progress"><i style="width:${a.lessons.length?done/a.lessons.length*100:0}%"></i></div><div class="lp-list" style="margin-top:9px">${progress.map(x=>`<div class="lp-list-item"><div><strong>${esc(lessons()[x.i]?.title||"Lesson")}</strong><small>${x.p}% complete</small></div><button type="button" data-open-lesson="${x.i}">${x.p>=a.minProgress?"Review":"Continue"}</button></div>`).join("")}</div><div class="lp-actions"><button type="button" id="lpClearAssignment">Clear assignment</button></div></article>`;
+}
+function bindAssignmentStudent(host){
+ $("#lpLoadAssignment",host)?.addEventListener("click",()=>{
+   const d=decodeCode($("#lpAssignmentLoad",host).value);
+   if(!d||d.type!=="nuclear-assignment-v1"||!Array.isArray(d.lessons)){ $("#lpAssignmentLoadFb",host).innerHTML='<div class="lp-feedback lp-bad">That assignment code is not valid.</div>';return}
+   state.assignments.student=d;save();renderToday();
+ });
+ $("#lpClearAssignment",host)?.addEventListener("click",()=>{state.assignments.student=null;save();renderToday()});
+ bindOpenLessons(host);
+}
+function renderTeacher(){
+ const host=$("#lp-teacher");if(!host)return;
+ const avg=Math.round(lessons().reduce((a,_,i)=>a+lessonProgress(i),0)/Math.max(1,lessons().length));
+ const weak=revisionItems().slice(0,5);
+ host.innerHTML=`<div class="lp-grid"><article class="lp-card"><span class="eyebrow">Current learner/device</span><h3>Teacher dashboard</h3><div class="lp-metric-grid"><div class="lp-metric"><strong>${avg}%</strong><span>course completion</span></div><div class="lp-metric"><strong>${diagnosticScore().pct}%</strong><span>diagnostic</span></div><div class="lp-metric"><strong>${Object.keys(state.misconceptions).length}</strong><span>flagged areas</span></div><div class="lp-metric"><strong>${Object.values(state.synoptic).filter(x=>x.completed).length}</strong><span>A* tasks secure</span></div></div><h4 style="margin-top:12px">Priority areas</h4><div class="lp-chip-row">${weak.map(x=>`<span class="lp-chip weak">${esc(x.title)}</span>`).join("")||'<span class="muted">No priorities yet</span>'}</div><label class="lp-field"><span>Student name for export</span><input id="lpProgressName" value="Student"></label><div class="lp-actions"><button type="button" class="primary" id="lpMakeProgressCode">Generate progress code</button></div><label class="lp-field"><span>Progress code</span><textarea id="lpProgressCode" readonly></textarea></label></article>
+ <article class="lp-card"><span class="eyebrow">Assignment mode</span><h3>Create an assignment</h3><label class="lp-field"><span>Assignment title</span><input id="lpAssignTitle" value="Nuclear Physics assignment"></label><label class="lp-field"><span>Due date</span><input type="date" id="lpAssignDue"></label><label class="lp-field"><span>Minimum lesson progress</span><select id="lpAssignMin"><option>60</option><option selected>80</option><option>100</option></select></label><div class="lp-list">${lessons().map((p,i)=>`<label class="lp-toggle"><span>${i+1}. ${esc(p.title)}</span><input type="checkbox" data-assign-lesson="${i}" ${i<3?"checked":""}></label>`).join("")}</div><div class="lp-actions"><button type="button" class="primary" id="lpBuildAssignment">Generate assignment code</button></div><label class="lp-field"><span>Assignment code</span><textarea id="lpAssignmentCode" readonly></textarea></label></article></div>
+ <article class="lp-card" style="margin-top:12px"><div class="lp-hero"><div><h3>Class progress imports</h3><p>Students can send their progress code. Import several codes here to compare learners without requiring a server account.</p></div><span class="lp-chip">${state.teacherRecords.length} students</span></div><div class="lp-grid"><label class="lp-field"><span>Paste student progress code</span><textarea id="lpImportProgress"></textarea></label><div><div class="lp-actions"><button type="button" id="lpImportProgressBtn">Import student</button><button type="button" id="lpClearRecords">Clear imported class</button></div><div id="lpImportFb"></div></div></div><div class="lp-table-wrap"><table class="lp-table"><thead><tr><th>Student</th><th>Average</th><th>Diagnostic</th><th>Weakest lessons</th></tr></thead><tbody>${state.teacherRecords.map(r=>{const av=Math.round((r.lessons||[]).reduce((a,x)=>a+(x.progress||0),0)/Math.max(1,(r.lessons||[]).length));const ds=r.diagnostic?.answers||{};const dvals=Object.values(ds);const dp=dvals.length?Math.round(dvals.filter(x=>x.correct).length/dvals.length*100):0;const wl=(r.lessons||[]).slice().sort((a,b)=>a.progress-b.progress).slice(0,3).map(x=>x.title).join(", ");return `<tr><td>${esc(r.name)}</td><td>${av}%</td><td>${dp}%</td><td>${esc(wl)}</td></tr>`}).join("")}</tbody></table></div></article>`;
+ $("#lpMakeProgressCode",host).onclick=()=>{$("#lpProgressCode",host).value=encodeCode(progressPayload($("#lpProgressName",host).value||"Student"))};
+ $("#lpBuildAssignment",host).onclick=()=>{const ls=$("[data-assign-lesson]:checked",host).map(x=>Number(x.dataset.assignLesson));const a={type:"nuclear-assignment-v1",title:$("#lpAssignTitle",host).value.trim(),due:$("#lpAssignDue",host).value,minProgress:Number($("#lpAssignMin",host).value),lessons:ls,created:now()};state.assignments.teacher.push(a);save();$("#lpAssignmentCode",host).value=encodeCode(a)};
+ $("#lpImportProgressBtn",host).onclick=()=>{const d=decodeCode($("#lpImportProgress",host).value);if(!d||d.type!=="nuclear-progress-v1"){$("#lpImportFb",host).innerHTML='<div class="lp-feedback lp-bad">Invalid progress code.</div>';return}state.teacherRecords.push(d);save();renderTeacher()};
+ $("#lpClearRecords",host).onclick=()=>{state.teacherRecords=[];save();renderTeacher()};
+}
+
+/* Feature: glossary + active recall */
+function glossaryEntries(){
+ const m=new Map();lessons().forEach((p,i)=>(p.vocab||[]).forEach(v=>{const key=v[0].toLowerCase();if(!m.has(key))m.set(key,{term:v[0],def:v[1],lesson:i,title:p.title})}));return [...m.values()].sort((a,b)=>a.term.localeCompare(b.term));
+}
+function renderGlossary(){
+ const host=$("#lp-glossary");if(!host)return;const all=glossaryEntries(),query=(state.ui.glossaryQuery||"").toLowerCase(),filtered=all.filter(x=>x.term.toLowerCase().includes(query)||x.def.toLowerCase().includes(query));
+ let idx=Math.min(Number(state.ui.glossaryIndex||0),Math.max(0,filtered.length-1)),g=filtered[idx];
+ host.innerHTML=`<div class="lp-hero"><div><h3>Glossary + active recall</h3><p>Search the full course vocabulary, then test yourself without seeing the definition first.</p></div></div><label class="lp-field"><span>Search terms</span><input id="lpGlossarySearch" value="${esc(state.ui.glossaryQuery||"")}" placeholder="e.g. binding energy"></label><div class="lp-glossary"><div class="lp-glossary-list">${filtered.map((x,n)=>`<button type="button" data-gloss="${n}" class="${n===idx?"active":""}">${esc(x.term)}</button>`).join("")}</div><article class="lp-card">${g?`<span class="lp-chip">${esc(g.title)}</span><h3>${esc(g.term)}</h3><div id="lpGlossDef" class="lp-feedback">Definition hidden — say or write it from memory first.</div><label class="lp-field"><span>Your definition</span><textarea id="lpGlossAttempt"></textarea></label><div class="lp-actions"><button type="button" class="primary" id="lpGlossReveal">Reveal and compare</button><button type="button" id="lpGlossNext">Another term</button></div><div id="lpGlossCompare"></div>`:'<p>No matching vocabulary.</p>'}</article></div>`;
+ $("#lpGlossarySearch",host).oninput=e=>{state.ui.glossaryQuery=e.target.value;state.ui.glossaryIndex=0;save();renderGlossary()};
+ $("[data-gloss]",host).forEach(b=>b.onclick=()=>{state.ui.glossaryIndex=Number(b.dataset.gloss);save();renderGlossary()});
+ $("#lpGlossReveal",host)?.addEventListener("click",()=>{const ans=$("#lpGlossAttempt",host).value,hits=pointHit(ans,g.def);$("#lpGlossDef",host).innerHTML=`<strong>${esc(g.def)}</strong>`;$("#lpGlossCompare",host).innerHTML=`<div class="lp-feedback ${hits?"lp-good":"lp-warn"}">${hits?"Your definition contains the main idea.":"Compare your wording with the course definition and try again from memory later."}</div>`;const qid=`gloss-${g.term.toLowerCase()}`;state.retrieval[qid]={streak:hits?1:0,interval:hits?3:1,due:now()+(hits?3:1)*day,last:now(),custom:{q:"Define "+g.term,answer:g.def,lesson:g.lesson}};save()});
+ $("#lpGlossNext",host)?.addEventListener("click",()=>{state.ui.glossaryIndex=(idx+1)%Math.max(1,filtered.length);save();renderGlossary()});
+}
+
+/* Feature: personalised exam paper generator */
+function examFlat(){const out=[];exams().forEach((arr,i)=>(arr||[]).forEach((q,n)=>out.push({lesson:i,n,title:lessons()[i]?.title||"",...q})));return out}
+function newPaper(count){
+ const pool=examFlat().slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+ state.paper.current=pool.slice(0,Math.min(count,pool.length)).map(q=>({...q,answer:"",revealed:false}));state.paper.created=now();save();
+}
+function renderPaper(){
+ const host=$("#lp-paper");if(!host)return;const paper=state.paper.current||[];
+ host.innerHTML=`<div class="lp-hero"><div><h3>Personalised mini-paper</h3><p>Generate a mixed paper from the course's original AQA-style question bank. Written answers stay saved on this device.</p></div><div class="lp-actions"><select id="lpPaperCount"><option>5</option><option selected>8</option><option>10</option><option>12</option></select><button type="button" class="primary" id="lpGeneratePaper">Generate paper</button></div></div>${paper.length?`<article class="lp-card"><div class="lp-stat"><strong>${paper.reduce((a,q)=>a+q.marks,0)}</strong><span>total marks</span></div>${paper.map((q,i)=>`<div class="lp-paper-q"><span class="lp-chip">${esc(q.title)} · ${q.marks} marks</span><h4>${i+1}. ${esc(q.q)}</h4><div class="lp-coach"><strong>Command-word coach</strong><span>${esc(commandCoach(q.q))}</span></div><textarea data-paper-answer="${i}" placeholder="Write your answer">${esc(q.answer||"")}</textarea><div class="lp-actions"><button type="button" data-paper-mark="${i}">Self-mark</button></div><div data-paper-result="${i}"></div></div>`).join("")}</article>`:'<article class="lp-card"><p class="muted">Generate a paper to begin.</p></article>'}`;
+ $("#lpGeneratePaper",host).onclick=()=>{newPaper(Number($("#lpPaperCount",host).value));renderPaper()};
+ $("[data-paper-answer]",host).forEach(t=>t.oninput=()=>{state.paper.current[Number(t.dataset.paperAnswer)].answer=t.value;save()});
+ $("[data-paper-mark]",host).forEach(b=>b.onclick=()=>{const i=Number(b.dataset.paperMark),q=state.paper.current[i],hits=q.points.map(p=>pointHit(q.answer,p));q.hits=hits;q.revealed=true;save();$('[data-paper-result="'+i+'"]',host).innerHTML='<div class="lp-markpoints">'+q.points.map((p,k)=>`<div class="lp-markpoint ${hits[k]?"hit":"miss"}">${hits[k]?"Likely covered":"Check"} · ${esc(p)}</div>`).join("")+'</div>'});
+}
+
+/* Feature: progress reports */
+function snapshot(){
+ const d=new Date().toISOString().slice(0,10),avg=Math.round(lessons().reduce((a,_,i)=>a+lessonProgress(i),0)/Math.max(1,lessons().length));
+ const last=state.history[state.history.length-1];if(last?.date===d){last.avg=avg}else state.history.push({date:d,avg});state.history=state.history.slice(-90);save();
+}
+function renderReports(){
+ const host=$("#lp-reports");if(!host)return;snapshot();const name=state.ui.reportName||"Student",diag=diagnosticScore();
+ host.innerHTML=`<div class="lp-hero"><div><h3>Progress report</h3><p>Printable summary of lesson completion, diagnostic performance, misconceptions and recommended next steps.</p></div><div class="lp-actions"><button type="button" class="primary" id="lpPrintReport">Print report</button><button type="button" id="lpReportCode">Generate progress code</button></div></div><label class="lp-field"><span>Student name</span><input id="lpReportName" value="${esc(name)}"></label><div id="lpReportCodeBox"></div><section class="lp-report" id="lpPrintableReport"><h2>AQA A-level Nuclear Physics Progress Report</h2><p><strong>Student:</strong> ${esc(name)} &nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString()}</p><h3>Summary</h3><p>Diagnostic: ${diag.pct}% · Spaced retrieval due: ${dueRetrieval().length} · Misconception areas flagged: ${Object.keys(state.misconceptions).length}</p><h3>Lesson progress</h3><table><thead><tr><th>Lesson</th><th>Progress</th><th>Status</th></tr></thead><tbody>${lessons().map((p,i)=>`<tr><td>${i+1}. ${esc(p.title)}</td><td>${lessonProgress(i)}%</td><td>${C()?.isComplete(i)?"Mastered":lessonProgress(i)>=60?"Developing":"Needs attention"}</td></tr>`).join("")}</tbody></table><h3>Recommended next steps</h3><ol>${revisionItems().map(x=>`<li><strong>${esc(x.title)}</strong> — ${esc(x.detail)}</li>`).join("")||"<li>Continue spaced retrieval and A* synoptic practice.</li>"}</ol></section>`;
+ $("#lpReportName",host).oninput=e=>{state.ui.reportName=e.target.value;save()};
+ $("#lpPrintReport",host).onclick=()=>window.print();
+ $("#lpReportCode",host).onclick=()=>{$("#lpReportCodeBox",host).innerHTML=`<label class="lp-field"><span>Shareable progress code</span><textarea readonly>${encodeCode(progressPayload($("#lpReportName",host).value||"Student"))}</textarea></label>`};
 }
 
 /*__LP_FEATURES__*/ 
