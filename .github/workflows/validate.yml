@@ -33,6 +33,11 @@ jobs:
           test -s rutherford-experiment.js
           test -s vendor/three.module.min.js
           test -s vendor/three.core.min.js
+          test -s learning-platform.css
+          test -s learning-platform.js
+          test -s manifest.webmanifest
+          test -s sw.js
+          test -s app-icon.svg
       - name: Check JavaScript syntax
         run: |
           node --check app.js
@@ -41,6 +46,8 @@ jobs:
           node --check interactive-lessons.js
           node --check mastery-upgrades.js
           node --check rutherford-experiment.js
+          node --check learning-platform.js
+          node --check sw.js
       - name: Check integrations
         run: |
           grep -q "lesson-sequencer.js" index.html
@@ -56,6 +63,10 @@ jobs:
           grep -q "Original AQA-style practice" interactive-lessons.js
           grep -q "rutherford-experiment.js" index.html
           grep -q "rutherford-experiment.css" index.html
+          grep -q "learning-platform.js" index.html
+          grep -q "learning-platform.css" index.html
+          grep -q "manifest.webmanifest" index.html
+          grep -q "Learning dashboard" learning-platform.js
           grep -q "Lesson sequencer" lesson-sequencer.js
           grep -q "Complete student lesson" interactive-lessons.js
           grep -q "Required practical 12" index.html
