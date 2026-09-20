@@ -37,18 +37,23 @@ try{
   await page.click('[data-il-tab="learn"]');
   await must('[data-il-panel="learn"].active',"learn tab opens");
   await must("[data-cco]","knowledge check renders");
-  if(!(await page.locator("#ilNext").isDisabled())) throw new Error("Next knowledge chunk should be locked before a correct check");
+  const nextCount=await page.locator('[data-il-panel="learn"] #ilNext').count();
+  if(!nextCount){
+    const learnHtml=await page.locator('[data-il-panel="learn"]').innerHTML();
+    throw new Error("Next knowledge chunk missing. Learn panel HTML: "+learnHtml.slice(0,5000));
+  }
+  if(!(await page.locator('[data-il-panel="learn"] #ilNext').isDisabled())) throw new Error("Next knowledge chunk should be locked before a correct check");
   const conceptOptions=page.locator("[data-cco]");
   for(let n=0;n<await conceptOptions.count();n++){
     const btn=conceptOptions.nth(n);
     if(await btn.isDisabled()) continue;
     await btn.click();
     await page.waitForTimeout(30);
-    if(!(await page.locator("#ilNext").isDisabled())) break;
+    if(!(await page.locator('[data-il-panel="learn"] #ilNext').isDisabled())) break;
   }
-  if(await page.locator("#ilNext").isDisabled()) throw new Error("Knowledge check could not be completed");
+  if(await page.locator('[data-il-panel="learn"] #ilNext').isDisabled()) throw new Error("Knowledge check could not be completed");
   console.log("PASS knowledge-check gate");
-  await page.click("#ilNext");
+  await page.click('[data-il-panel="learn"] #ilNext');
   console.log("PASS next knowledge chunk");
 
   await page.click('[data-il-tab="example"]');
