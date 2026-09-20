@@ -229,7 +229,7 @@ function phase(title,time,html){return '<section class="seq-phase"><button><span
 function simName(id){const names={rutherford:"Rutherford scattering",radiation:"radiation and absorption",decay:"random decay",stability:"N–Z stability",energyLevels:"nuclear energy levels",closestApproach:"alpha closest approach",electronDiffraction:"electron diffraction",radius:"nuclear radius",massEnergy:"mass defect",binding:"binding-energy curve",fission:"fission chain",moderation:"neutron moderation",reactor:"reactor systems"};return names[id]||id}
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 function wireLesson(){
- $(".seq-phase > button",$("#seqRoot")).forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
+ $$(".seq-phase > button",$("#seqRoot")).forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
  $$("[data-mastery]",$("#seqRoot")).forEach(b=>b.onclick=()=>{const l=sequence[state.current];state.mastery[l.id]=Number(b.dataset.mastery);save();render()});
  $$("[data-open-sim]",$("#seqRoot")).forEach(b=>b.onclick=()=>openSim(b.dataset.openSim));
  $("#seqComplete").onclick=()=>toggleDone();
