@@ -133,12 +133,15 @@ function adaptiveNeeded(i){
 }
 function injectAdaptive(){
  const root=$("#interactiveLessonWorkspace");if(!root)return;
- const old=$("#lpAdaptive",root);if(old)old.remove();
+ const old=$("#lpAdaptive",root);
  const i=activeLesson(),p=lessons()[i];if(!p)return;
  const perf=state.performance[`lesson-${i}`]||{wrong:0,correct:0,streak:0};
- const strong=perf.streak>=3||perf.correct>=5;
- if(!adaptiveNeeded(i)&&!strong)return;
- const box=document.createElement("article");box.id="lpAdaptive";box.className="lp-adaptive";
+ const strong=perf.streak>=3||perf.correct>=5,need=adaptiveNeeded(i);
+ const mode=strong?"astar":need?"reteach":"none";
+ if(mode==="none"){if(old)old.remove();return}
+ if(old&&old.dataset.lesson===String(i)&&old.dataset.mode===mode)return;
+ if(old)old.remove();
+ const box=document.createElement("article");box.id="lpAdaptive";box.className="lp-adaptive";box.dataset.lesson=String(i);box.dataset.mode=mode;
  if(strong){
    const hard=exams()?.[i]?.[1]||exams()?.[i]?.[0];
    box.innerHTML=`<h4>A* extension unlocked</h4><p>Your recent answers are secure. Try a harder unfamiliar application before moving on.</p><div class="lp-question"><h4>${esc(hard?.q||"Explain this lesson using evidence, a model/equation and one limitation.")}</h4><textarea id="lpAstarUnlock" style="width:100%;min-height:90px;background:#061421;color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px"></textarea><div class="lp-actions"><button type="button" id="lpCheckAstar">Check reasoning</button></div><div id="lpAstarFb"></div></div>`;
