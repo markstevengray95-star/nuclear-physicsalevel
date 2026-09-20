@@ -317,7 +317,7 @@ function currentIndex(){
 function S(i){
  let s=state[i];
  if(!s||typeof s!=="object")s=state[i]={};
- s.pages=(s.pages&&typeof s.pages==="object"&&!Array.isArray(s.pages))?s.pages:{};
+ s.starter=(s.starter&&typeof s.starter==="object"&&!Array.isArray(s.starter))?s.starter:{};\n s.exam=(s.exam&&typeof s.exam==="object"&&!Array.isArray(s.exam))?s.exam:{};\n s.pages=(s.pages&&typeof s.pages==="object"&&!Array.isArray(s.pages))?s.pages:{};
  s.practice=(s.practice&&typeof s.practice==="object"&&!Array.isArray(s.practice))?s.practice:{};
  s.sim=(s.sim&&typeof s.sim==="object"&&!Array.isArray(s.sim))?s.sim:{};
  s.reinforce=(s.reinforce&&typeof s.reinforce==="object"&&!Array.isArray(s.reinforce))?s.reinforce:{};
@@ -327,7 +327,7 @@ function S(i){
  s.worked=Number.isFinite(Number(s.worked))?Math.max(0,Number(s.worked)):0;
  s.short=!!s.short;
  s.exitBest=Number.isFinite(Number(s.exitBest))?Math.max(0,Math.min(3,Number(s.exitBest))):0;
- s.tab=VALID_TABS.has(s.tab)?s.tab:"learn";
+ s.tab=VALID_TABS.has(s.tab)?s.tab:"starter";
  return s;
 }
 function pct(i){
