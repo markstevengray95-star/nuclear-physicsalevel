@@ -48,3 +48,17 @@
 .il-exam-score{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:10px 0;padding:9px 10px;border-radius:9px;background:#0b1b2b;border:1px solid var(--border)}
 .il-exam-score strong{color:#cfeeff}.il-exam-score span{font-size:.77rem;color:var(--muted);text-align:right}
 @media(max-width:650px){.il-exam-head,.il-exam-score{align-items:flex-start;flex-direction:column}.il-exam-score span{text-align:left}}
+
+
+/* Structured lesson learning map */
+.il-start-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.il-start-grid ul{margin:6px 0 0;padding-left:20px}.il-start-grid li{margin:5px 0;line-height:1.4}
+.il-core-map{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px;padding:12px;border:1px solid var(--border);border-radius:12px;background:#071522}
+.il-core-map strong{display:block;margin-bottom:6px}.il-core-map ol{margin:0;padding-left:20px}.il-core-map li{margin:5px 0;font-size:.82rem}
+.il-core-map p{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.il-core-map p span{padding:4px 7px;border:1px solid #35536e;border-radius:999px;background:#0a1c2d;font-size:.72rem;color:#cfeaff}
+.il-core-equations{display:grid;gap:5px}.il-core-equations code{display:block;padding:6px 8px;border-radius:8px;background:#061421;border:1px solid #29445e;color:#d6f1ff;white-space:normal}
+.il-learning-progress{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+.il-concept-check{margin-top:10px;border-left:4px solid var(--accent)}.il-concept-check .eyebrow{display:block;margin-bottom:5px}
+.seq-roadmap-steps{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.seq-roadmap-steps span{padding:5px 8px;border-radius:999px;border:1px solid var(--border);background:#081827;font-size:.74rem}
+button:disabled{cursor:not-allowed;opacity:.55}
+@media(max-width:760px){.il-start-grid,.il-core-map{grid-template-columns:1fr}.il-learning-progress{align-items:flex-start;flex-direction:column}}
