@@ -27,6 +27,8 @@ jobs:
           test -s simulation-upgrades.js
           test -s interactive-lessons.css
           test -s interactive-lessons.js
+          test -s mastery-upgrades.css
+          test -s mastery-upgrades.js
           test -s rutherford-experiment.css
           test -s rutherford-experiment.js
           test -s vendor/three.module.min.js
@@ -36,12 +38,16 @@ jobs:
           node --check lesson-sequencer.js
           node --check simulation-upgrades.js
           node --check interactive-lessons.js
+          node --check mastery-upgrades.js
           node --check rutherford-experiment.js
       - name: Check integrations
         run: |
           grep -q "lesson-sequencer.js" index.html
           grep -q "simulation-upgrades.js" index.html
           grep -q "interactive-lessons.js" index.html
+          grep -q "mastery-upgrades.js" index.html
+          grep -q "A\* mastery hub" mastery-upgrades.js
+          grep -q "Reinforcement tasks" interactive-lessons.js
           grep -q "rutherford-experiment.js" index.html
           grep -q "rutherford-experiment.css" index.html
           grep -q "Lesson sequencer" lesson-sequencer.js
