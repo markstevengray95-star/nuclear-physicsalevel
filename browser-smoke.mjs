@@ -87,6 +87,36 @@ try{
   await page.locator("[data-reveal-ms]").first().click();
   await must("[data-ms]:not(.hidden)","mark points reveal");
 
+  await must('.nav-button[data-view="platform"]',"learning dashboard nav");
+  await page.click('.nav-button[data-view="platform"]');
+  await must("#view-platform.active-view","learning dashboard opens");
+  for (const tab of ["diagnostic","retrieval","calculations","challenges","glossary","paper","teacher","reports","settings"]) {
+    await page.click('[data-lp-tab="'+tab+'"]');
+    await must("#lp-"+tab+".active","dashboard tab "+tab);
+  }
+  await page.click('[data-lp-tab="diagnostic"]');
+  await must("[data-diagnostic]","diagnostic questions render");
+  await page.click('[data-lp-tab="calculations"]');
+  await page.locator("#lpCalcEq").fill("A = lambda N");
+  await page.locator("#lpCalcRearr").fill("A = lambda N");
+  await page.locator("#lpCalcSub").fill("values with units");
+  await page.locator("#lpCalcAns").fill("1.0e6");
+  await page.locator("#lpCalcUnit").fill("Bq");
+  await page.click("#lpCalcCheck");
+  await must("#lpCalcFeedback .lp-feedback","calculation method feedback");
+  await page.click('[data-lp-tab="glossary"]');
+  await must("#lpGlossarySearch","glossary search");
+  await page.click('[data-lp-tab="paper"]');
+  await page.click("#lpGeneratePaper");
+  await must("[data-paper-answer]","paper generator questions");
+  await page.click('[data-lp-tab="teacher"]');
+  await must("#lpBuildAssignment","assignment builder");
+  await page.click('[data-lp-tab="reports"]');
+  await must("#lpPrintableReport","progress report");
+  await page.click('[data-lp-tab="settings"]');
+  await must("[data-a11y]","accessibility controls");
+  console.log("PASS integrated learning platform");
+
   await must('.nav-button[data-view="mastery"]',"A-star hub nav");
   await page.click('.nav-button[data-view="mastery"]');
   await must("#view-mastery.active-view","A-star hub opens");
