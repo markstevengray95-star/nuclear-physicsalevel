@@ -327,6 +327,7 @@ function S(i){
  s.reinforce.vocab=(s.reinforce.vocab&&typeof s.reinforce.vocab==="object"&&!Array.isArray(s.reinforce.vocab))?s.reinforce.vocab:{};
  s.reinforce.sequence=!!s.reinforce.sequence;
  s.reinforce.explain=!!s.reinforce.explain;
+ s.reinforce.answer=typeof s.reinforce.answer==="string"?s.reinforce.answer:"";
  s.worked=Number.isFinite(Number(s.worked))?Math.max(0,Number(s.worked)):0;
  s.short=!!s.short;
  s.shortAnswer=typeof s.shortAnswer==="string"?s.shortAnswer:"";
@@ -456,20 +457,33 @@ function renderExample(i){
 }
 function renderPractice(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="practice"]');if(!host)return;
- host.innerHTML='<div id="ilPracticeQs">'+p.practice.map((q,n)=>'<article class="il-q" data-pq="'+n+'"><h4>'+(n+1)+'. '+q[0]+'</h4><div class="il-options">'+q[1].map((o,j)=>'<button data-po="'+j+'">'+o+'</button>').join("")+'</div><div class="il-feedback hidden"></div></article>').join("")+'</div>'+
- '<article class="il-card il-short"><h4>Short-answer self check</h4><p>'+p.short[0]+'</p><textarea id="ilShort" placeholder="Write your answer before revealing the model answer."></textarea><div class="il-actions"><button class="button" id="ilModelBtn">Show model answer</button></div><div class="il-model hidden" id="ilShortModel"><strong>Model answer:</strong> '+p.short[1]+'</div></article>'+
- '<div class="il-actions"><button class="button primary" id="ilToSim">Continue to simulation task →</button></div>';
+ const secure=Object.values(s.practice).filter(Boolean).length;
+ host.innerHTML='<div class="il-reinforce-head"><div><span class="eyebrow">Guided practice</span><h4>Apply the core ideas</h4><p>Use the feedback to correct mistakes before moving to independent practice.</p></div><span class="il-badge">'+secure+'/'+p.practice.length+' checks secure</span></div>'+
+ '<div id="ilPracticeQs">'+p.practice.map((q,n)=>'<article class="il-q" data-pq="'+n+'"><h4>'+(n+1)+'. '+q[0]+'</h4><div class="il-options">'+q[1].map((o,j)=>'<button data-po="'+j+'" '+(s.practice[n]?'disabled':'')+'>'+o+'</button>').join("")+'</div><div class="il-feedback '+(s.practice[n]?'':'hidden')+'">'+(s.practice[n]?'Secure — '+q[3]:'')+'</div></article>').join("")+'</div>'+
+ '<article class="il-card il-short"><h4>Guided short answer</h4><p>'+p.short[0]+'</p><textarea id="ilShort" placeholder="Write your answer here before checking the model response.">'+safe(s.shortAnswer)+'</textarea><div class="il-actions"><button class="button primary" id="ilModelBtn">Check against model answer</button></div><div class="il-model '+(s.short?'':'hidden')+'" id="ilShortModel"><strong>Model answer:</strong> '+p.short[1]+'<p class="muted">Edit your own answer above so it contains the key physics before moving on.</p></div></article>'+
+ '<div class="il-actions"><button class="button primary" id="ilToSim" '+((secure<p.practice.length||!s.short)?'disabled':'')+'>Continue to independent practice →</button></div>';
  $$(".il-q",host).forEach((box,n)=>{
-   const q=p.practice[n]; $$("[data-po]",box).forEach(b=>b.onclick=()=>{
-     const choice=Number(b.dataset.po),ok=choice===q[2];s.practice[n]=true;save();
-     $$("[data-po]",box).forEach((x,j)=>{x.disabled=true;if(j===q[2])x.classList.add("correct");if(j===choice&&!ok)x.classList.add("wrong")});
-     const fb=$(".il-feedback",box);fb.classList.remove("hidden");fb.textContent=(ok?"Correct. ":"Not quite. ")+q[3];updateProgress(i);
+   const q=p.practice[n];$$("[data-po]",box).forEach(btn=>btn.onclick=()=>{
+     if(s.practice[n])return;
+     const choice=Number(btn.dataset.po),ok=choice===q[2],fb=$(".il-feedback",box);fb.classList.remove("hidden");
+     if(ok){
+       s.practice[n]=true;save();$$("[data-po]",box).forEach((x,j)=>{x.disabled=true;if(j===q[2])x.classList.add("correct")});
+       fb.textContent="Correct — "+q[3];updateProgress(i);renderPractice(i);
+     }else{
+       btn.disabled=true;btn.classList.add("wrong");fb.textContent="Not yet — "+q[3]+" Try again.";
+     }
    });
  });
- $("#ilModelBtn",host).onclick=()=>{s.short=true;save();$("#ilShortModel",host).classList.remove("hidden");updateProgress(i)};
- $("#ilToSim",host).textContent="Continue to reinforcement →";$("#ilToSim",host).onclick=()=>showTab(i,"reinforce");
+ $("#ilShort",host).oninput=e=>{s.shortAnswer=e.target.value;save()};
+ $("#ilModelBtn",host).onclick=()=>{
+   s.shortAnswer=$("#ilShort",host).value;
+   if(s.shortAnswer.trim().length<25){
+     const box=$("#ilShortModel",host);box.classList.remove("hidden");box.innerHTML='<strong>Add more detail first.</strong><p>Write at least one complete physics explanation before checking the model response.</p>';return;
+   }
+   s.short=true;save();renderPractice(i);updateProgress(i);
+ };
+ $("#ilToSim",host).onclick=()=>showTab(i,"reinforce");
 }
-
 function shuffledIndices(n,seed){
  const arr=Array.from({length:n},(_,i)=>i);let x=(seed+1)*2654435761>>>0;
  for(let i=n-1;i>0;i--){x=(1664525*x+1013904223)>>>0;const j=x%(i+1);[arr[i],arr[j]]=[arr[j],arr[i]]}
@@ -483,10 +497,11 @@ function renderReinforce(i){
  '<div class="il-reinforce-head"><div><span class="eyebrow">Build and strengthen</span><h4>Reinforcement tasks</h4><p>Complete these after the first practice. They move from precise vocabulary → method → explanation.</p></div><span class="il-badge">'+vocabDone+'/'+p.vocab.length+' vocabulary secure</span></div>'+
  '<article class="il-card il-reinforce-card"><div class="il-task-number">1</div><div><h4>Vocabulary retrieval</h4><p class="muted">Choose the correct definition for each key term. Your progress is saved.</p><div id="ilVocabTasks" class="il-vocab-tasks"></div></div></article>'+
  '<article class="il-card il-reinforce-card"><div class="il-task-number">2</div><div><h4>Build the method</h4><p>'+p.worked.q+'</p><p class="muted">Click the steps in the correct order. If you make a mistake, the sequence resets so you can try again.</p><div id="ilSequencePool" class="il-sequence-pool"></div><div id="ilSequenceChosen" class="il-sequence-chosen"></div><div id="ilSequenceFeedback" class="il-feedback hidden"></div></div></article>'+
- '<article class="il-card il-reinforce-card"><div class="il-task-number">3</div><div><h4>Explain it from memory</h4><p>'+p.short[0]+'</p><textarea id="ilReinforceExplain" class="il-long-answer" placeholder="Write your explanation without looking back first."></textarea><div class="il-keyword-strip"><strong>Try to use:</strong> '+p.vocab.slice(0,4).map(v=>'<span>'+v[0]+'</span>').join("")+'</div><div class="il-actions"><button class="button primary" id="ilCheckExplain">Check my explanation</button><button class="button" id="ilRevealExplain">Reveal model answer</button></div><div id="ilExplainFeedback" class="il-feedback hidden"></div><div id="ilExplainModel" class="il-model hidden"><strong>Model response:</strong> '+p.short[1]+'</div></div></article>'+
+ '<article class="il-card il-reinforce-card"><div class="il-task-number">3</div><div><h4>Explain it from memory</h4><p>'+p.short[0]+'</p><textarea id="ilReinforceExplain" class="il-long-answer" placeholder="Write your explanation without looking back first.">'+safe(s.reinforce.answer||"")+'</textarea><div class="il-keyword-strip"><strong>Try to use:</strong> '+p.vocab.slice(0,4).map(v=>'<span>'+v[0]+'</span>').join("")+'</div><div class="il-actions"><button class="button primary" id="ilCheckExplain">Check my explanation</button><button class="button" id="ilRevealExplain">Reveal model answer</button></div><div id="ilExplainFeedback" class="il-feedback hidden"></div><div id="ilExplainModel" class="il-model hidden"><strong>Model response:</strong> '+p.short[1]+'</div></div></article>'+
  '<div class="il-actions"><button class="button primary" id="ilReinforceNext">Continue to simulation task →</button></div>';
  renderVocabTasks(i);
  renderSequenceTask(i,seqOrder,[]);
+ $("#ilReinforceExplain",host).oninput=e=>{s.reinforce.answer=e.target.value;save()};
  $("#ilCheckExplain",host).onclick=()=>checkReinforceExplain(i);
  $("#ilRevealExplain",host).onclick=()=>{s.reinforce.explain=true;save();$("#ilExplainModel",host).classList.remove("hidden");updateProgress(i)};
  $("#ilReinforceNext",host).onclick=()=>showTab(i,"simulation");
@@ -529,6 +544,7 @@ function renderSequenceTask(i,order,chosen){
 }
 function checkReinforceExplain(i){
  const p=P[i],s=S(i),text=($("#ilReinforceExplain")?.value||"").trim(),fb=$("#ilExplainFeedback");
+ s.reinforce.answer=text;save();
  const terms=p.vocab.slice(0,4).map(v=>v[0].toLowerCase()).filter(x=>x.length>1);
  const low=text.toLowerCase(),hits=terms.filter(t=>low.includes(t)).length;
  fb.classList.remove("hidden");
@@ -538,13 +554,14 @@ function checkReinforceExplain(i){
 }
 function renderSimulation(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="simulation"]');if(!host)return;
- host.innerHTML='<div class="il-simtask"><article class="il-card"><span class="eyebrow">Predict → test → explain</span><h4>Interactive task</h4><p>'+p.sim[0]+'</p><div class="il-predict"><label>Prediction<textarea id="ilPrediction" placeholder="What do you expect to happen and why?"></textarea></label><label>Explanation after testing<textarea id="ilExplanation" placeholder="What did the model show? Explain it with physics."></textarea></label></div><div class="il-actions"><button class="button primary" id="ilOpenSim">Open linked simulation</button><button class="button" id="ilFormula">Open Formula Coach</button></div></article><article class="il-card"><h4>Simulation evidence checklist</h4><div class="il-checklist">'+p.sim[1].map((x,n)=>'<label class="il-check"><input type="checkbox" data-sc="'+n+'" '+(s.sim[n]?"checked":"")+'> <span>'+x+'</span></label>').join("")+'</div><p class="muted small">Tick an item only after you have tested or explained it.</p></article></div><div class="il-actions"><button class="button primary" id="ilToExit">Continue to exit ticket →</button></div>';
+ host.innerHTML='<div class="il-simtask"><article class="il-card"><span class="eyebrow">Predict → test → explain</span><h4>Interactive activity</h4><p>'+p.sim[0]+'</p><div class="il-predict"><label>Prediction<textarea id="ilPrediction" placeholder="What do you expect to happen and why?">'+safe(s.simNotes.prediction)+'</textarea></label><label>Explanation after testing<textarea id="ilExplanation" placeholder="What did the model show? Explain it with physics.">'+safe(s.simNotes.explanation)+'</textarea></label></div><div class="il-actions"><button class="button primary" id="ilOpenSim">Open linked simulation</button><button class="button" id="ilFormula">Open Formula Coach</button></div></article><article class="il-card"><h4>Simulation evidence checklist</h4><div class="il-checklist">'+p.sim[1].map((x,n)=>'<label class="il-check"><input type="checkbox" data-sc="'+n+'" '+(s.sim[n]?"checked":"")+'> <span>'+x+'</span></label>').join("")+'</div><p class="muted small">Make a prediction, test it, write the physics explanation, then tick the evidence you actually observed.</p></article></div><div class="il-actions"><button class="button primary" id="ilToExit">Continue to exam questions →</button></div>';
+ $("#ilPrediction",host).oninput=e=>{s.simNotes.prediction=e.target.value;save()};
+ $("#ilExplanation",host).oninput=e=>{s.simNotes.explanation=e.target.value;save()};
  $$("[data-sc]",host).forEach(c=>c.onchange=()=>{s.sim[c.dataset.sc]=c.checked;save();updateProgress(i)});
- $("#ilOpenSim",host).onclick=()=>{const b=$(".seq-phase [data-open-sim]");if(b)b.click();else{const lab=$('.nav-button[data-view="lab"]');if(lab)lab.click()}};
+ $("#ilOpenSim",host).onclick=()=>{const b=$(".seq-phase [data-open-sim]");if(b)b.click();else{const full=p.title.includes("Rutherford")?$('.nav-button[data-view="rutherfordexp"]'):null;if(full)full.click();else{const lab=$('.nav-button[data-view="lab"]');if(lab)lab.click()}}};
  $("#ilFormula",host).onclick=()=>{const b=$('.nav-button[data-view="formula"]');if(b)b.click()};
- $("#ilToExit",host).textContent="Continue to exam questions →";$("#ilToExit",host).onclick=()=>showTab(i,"exam");
+ $("#ilToExit",host).onclick=()=>showTab(i,"exam");
 }
-
 function renderExam(i){
  const qs=EXAM[i],s=S(i),host=$('[data-il-panel="exam"]');if(!host)return;
  const completed=Object.values(s.exam).filter(v=>v&&v.completed).length;
