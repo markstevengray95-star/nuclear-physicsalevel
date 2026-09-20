@@ -37,3 +37,14 @@
 .il-long-answer{width:100%;min-height:120px;resize:vertical;border:1px solid var(--border);background:#061421;color:var(--text);border-radius:10px;padding:10px;font:inherit}
 .il-keyword-strip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:.76rem}.il-keyword-strip span{padding:4px 7px;border-radius:999px;border:1px solid #35536e;background:#0a1c2d;color:#ccecff}
 @media(max-width:700px){.il-reinforce-head{display:block}.il-reinforce-head .il-badge{margin-top:8px}.il-reinforce-card{grid-template-columns:1fr}.il-task-number{width:32px;height:32px}.il-mini-options{grid-template-columns:1fr}}
+
+
+/* Starter and exam-question stages */
+.il-starter-q{position:relative}.il-starter-q>.il-badge{margin-bottom:8px}
+.il-exam-card{margin-bottom:12px}.il-exam-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+.il-exam-head>div{display:flex;align-items:center;gap:9px}.il-exam-head .il-task-number{width:32px;height:32px}
+.il-mark-scheme{margin-top:10px;padding:12px;border:1px solid #35516b;border-radius:11px;background:#071522}
+.il-mark-scheme h4{margin:0 0 4px}.il-mark-scheme>.il-check{margin-top:6px}
+.il-exam-score{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:10px 0;padding:9px 10px;border-radius:9px;background:#0b1b2b;border:1px solid var(--border)}
+.il-exam-score strong{color:#cfeeff}.il-exam-score span{font-size:.77rem;color:var(--muted);text-align:right}
+@media(max-width:650px){.il-exam-head,.il-exam-score{align-items:flex-start;flex-direction:column}.il-exam-score span{text-align:left}}
