@@ -654,5 +654,21 @@ function attachSequenceWatcher(){
  });
  safeInject();
 }
+window.NuclearCourse={
+ get lessons(){return P},
+ get exam(){return EXAM},
+ get state(){return state},
+ lessonIndex:currentIndex,
+ getLessonState(i){return S(i)},
+ save(){
+  try{localStorage.setItem(STORE,JSON.stringify(state))}catch{}
+ },
+ showTab(i,tab){
+  const active=currentIndex();
+  if(i===active)showTab(i,tab);
+ },
+ isComplete,
+ progress:pct
+};
 setTimeout(attachSequenceWatcher,120);
 })();
