@@ -158,7 +158,11 @@ const sequence=[
 
 let state;
 try{state=JSON.parse(localStorage.getItem(STORAGE)||"{}")}catch{state={}}
-state.mode=state.mode||"student";state.current=state.current||0;state.done=state.done||{};state.mastery=state.mastery||{};state.notes=state.notes||{};
+state.mode=state.mode==="teacher"?"teacher":"student";
+state.current=Number.isInteger(Number(state.current))?Math.max(0,Math.min(sequence.length-1,Number(state.current))):0;
+state.done=(state.done&&typeof state.done==="object")?state.done:{};
+state.mastery=(state.mastery&&typeof state.mastery==="object")?state.mastery:{};
+state.notes=(state.notes&&typeof state.notes==="object")?state.notes:{};
 let presentIndex=0;
 
 function save(){localStorage.setItem(STORAGE,JSON.stringify(state));}
@@ -225,7 +229,7 @@ function phase(title,time,html){return '<section class="seq-phase"><button><span
 function simName(id){const names={rutherford:"Rutherford scattering",radiation:"radiation and absorption",decay:"random decay",stability:"N–Z stability",energyLevels:"nuclear energy levels",closestApproach:"alpha closest approach",electronDiffraction:"electron diffraction",radius:"nuclear radius",massEnergy:"mass defect",binding:"binding-energy curve",fission:"fission chain",moderation:"neutron moderation",reactor:"reactor systems"};return names[id]||id}
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
 function wireLesson(){
- $$(".seq-phase button",$("#seqRoot")).forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
+ $(".seq-phase > button",$("#seqRoot")).forEach(b=>b.onclick=()=>b.parentElement.classList.toggle("open"));
  $$("[data-mastery]",$("#seqRoot")).forEach(b=>b.onclick=()=>{const l=sequence[state.current];state.mastery[l.id]=Number(b.dataset.mastery);save();render()});
  $$("[data-open-sim]",$("#seqRoot")).forEach(b=>b.onclick=()=>openSim(b.dataset.openSim));
  $("#seqComplete").onclick=()=>toggleDone();
