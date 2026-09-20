@@ -339,7 +339,7 @@ function S(i){
  return s;
 }
 function pct(i){
- const p=P[i],s=S(i);let done=0,total=3+(p.learn.length*2)+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+EXAM[i].length+1;
+ const p=P[i],s=S(i);let done=0,total=3+(p.learn.length*2)+1+p.practice.length+1+p.sim[1].length+2+p.vocab.length+2+EXAM[i].length+1;
  done+=Object.values(s.starter).filter(Boolean).length;
  done+=Object.values(s.pages).filter(Boolean).length;
  done+=Object.values(s.conceptChecks).filter(Boolean).length;
@@ -347,6 +347,8 @@ function pct(i){
  done+=Object.values(s.practice).filter(Boolean).length;
  if(s.short)done++;
  done+=Object.values(s.sim).filter(Boolean).length;
+ if(s.simNotes.prediction.trim().length>=15)done++;
+ if(s.simNotes.explanation.trim().length>=25)done++;
  done+=Object.values(s.reinforce.vocab).filter(Boolean).length;
  if(s.reinforce.sequence)done++;
  if(s.reinforce.explain)done++;
@@ -554,10 +556,10 @@ function checkReinforceExplain(i){
 }
 function renderSimulation(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="simulation"]');if(!host)return;
- host.innerHTML='<div class="il-simtask"><article class="il-card"><span class="eyebrow">Predict → test → explain</span><h4>Interactive activity</h4><p>'+p.sim[0]+'</p><div class="il-predict"><label>Prediction<textarea id="ilPrediction" placeholder="What do you expect to happen and why?">'+safe(s.simNotes.prediction)+'</textarea></label><label>Explanation after testing<textarea id="ilExplanation" placeholder="What did the model show? Explain it with physics.">'+safe(s.simNotes.explanation)+'</textarea></label></div><div class="il-actions"><button class="button primary" id="ilOpenSim">Open linked simulation</button><button class="button" id="ilFormula">Open Formula Coach</button></div></article><article class="il-card"><h4>Simulation evidence checklist</h4><div class="il-checklist">'+p.sim[1].map((x,n)=>'<label class="il-check"><input type="checkbox" data-sc="'+n+'" '+(s.sim[n]?"checked":"")+'> <span>'+x+'</span></label>').join("")+'</div><p class="muted small">Make a prediction, test it, write the physics explanation, then tick the evidence you actually observed.</p></article></div><div class="il-actions"><button class="button primary" id="ilToExit">Continue to exam questions →</button></div>';
- $("#ilPrediction",host).oninput=e=>{s.simNotes.prediction=e.target.value;save()};
- $("#ilExplanation",host).oninput=e=>{s.simNotes.explanation=e.target.value;save()};
- $$("[data-sc]",host).forEach(c=>c.onchange=()=>{s.sim[c.dataset.sc]=c.checked;save();updateProgress(i)});
+ host.innerHTML='<div class="il-simtask"><article class="il-card"><span class="eyebrow">Predict → test → explain</span><h4>Interactive activity</h4><p>'+p.sim[0]+'</p><div class="il-predict"><label>Prediction<textarea id="ilPrediction" placeholder="What do you expect to happen and why?">'+safe(s.simNotes.prediction)+'</textarea></label><label>Explanation after testing<textarea id="ilExplanation" placeholder="What did the model show? Explain it with physics.">'+safe(s.simNotes.explanation)+'</textarea></label></div><div class="il-actions"><button class="button primary" id="ilOpenSim">Open linked simulation</button><button class="button" id="ilFormula">Open Formula Coach</button></div></article><article class="il-card"><h4>Simulation evidence checklist</h4><div class="il-checklist">'+p.sim[1].map((x,n)=>'<label class="il-check"><input type="checkbox" data-sc="'+n+'" '+(s.sim[n]?"checked":"")+'> <span>'+x+'</span></label>').join("")+'</div><p class="muted small">Make a prediction, test it, write the physics explanation, then tick the evidence you actually observed.</p></article></div><div class="il-actions"><button class="button primary" id="ilToExit" '+((Object.values(s.sim).filter(Boolean).length<p.sim[1].length||s.simNotes.prediction.trim().length<15||s.simNotes.explanation.trim().length<25)?'disabled':'')+'>Continue to exam questions →</button></div>';
+ $("#ilPrediction",host).oninput=e=>{s.simNotes.prediction=e.target.value;save();updateProgress(i)};
+ $("#ilExplanation",host).oninput=e=>{s.simNotes.explanation=e.target.value;save();updateProgress(i)};
+ $("[data-sc]",host).forEach(c=>c.onchange=()=>{s.sim[c.dataset.sc]=c.checked;save();updateProgress(i);renderSimulation(i)});
  $("#ilOpenSim",host).onclick=()=>{const b=$(".seq-phase [data-open-sim]");if(b)b.click();else{const full=p.title.includes("Rutherford")?$('.nav-button[data-view="rutherfordexp"]'):null;if(full)full.click();else{const lab=$('.nav-button[data-view="lab"]');if(lab)lab.click()}}};
  $("#ilFormula",host).onclick=()=>{const b=$('.nav-button[data-view="formula"]');if(b)b.click()};
  $("#ilToExit",host).onclick=()=>showTab(i,"exam");
@@ -610,7 +612,7 @@ function showExitResult(i,score,stored){
  host.innerHTML='<div class="il-exit-score"><div class="il-score-ring '+(pass?"pass":"retry")+'">'+score+'/3</div><div class="il-status '+(pass?"pass":"retry")+'"><strong>'+(pass?"Exit ticket passed":"Not secure yet")+'</strong><div>'+(pass?"You have met the exit-ticket threshold. Finish any unticked lesson activities to complete the lesson.":"Review the teaching pages and retry. Your best score is saved.")+'</div></div></div>'+(pass&&isComplete(i)?'<div class="il-complete-banner"><strong>Lesson mastered.</strong> All learning, practice, simulation evidence and exit-ticket requirements are complete.</div>':'');
 }
 function isComplete(i){
- const p=P[i],s=S(i);return Object.values(s.starter).filter(Boolean).length>=3 && Object.values(s.pages).filter(Boolean).length>=p.learn.length && Object.values(s.conceptChecks).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && Object.values(s.exam).filter(v=>v&&v.completed).length>=EXAM[i].length && s.exitBest>=2;
+ const p=P[i],s=S(i);return Object.values(s.starter).filter(Boolean).length>=3 && Object.values(s.pages).filter(Boolean).length>=p.learn.length && Object.values(s.conceptChecks).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && s.simNotes.prediction.trim().length>=15 && s.simNotes.explanation.trim().length>=25 && Object.values(s.exam).filter(v=>v&&v.completed).length>=EXAM[i].length && s.exitBest>=2;
 }
 function syncSequenceCompletion(){
  setTimeout(()=>{
