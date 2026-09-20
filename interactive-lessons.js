@@ -317,7 +317,9 @@ function currentIndex(){
 function S(i){
  let s=state[i];
  if(!s||typeof s!=="object")s=state[i]={};
- s.starter=(s.starter&&typeof s.starter==="object"&&!Array.isArray(s.starter))?s.starter:{};\n s.exam=(s.exam&&typeof s.exam==="object"&&!Array.isArray(s.exam))?s.exam:{};\n s.pages=(s.pages&&typeof s.pages==="object"&&!Array.isArray(s.pages))?s.pages:{};
+ s.starter=(s.starter&&typeof s.starter==="object"&&!Array.isArray(s.starter))?s.starter:{};
+ s.exam=(s.exam&&typeof s.exam==="object"&&!Array.isArray(s.exam))?s.exam:{};
+ s.pages=(s.pages&&typeof s.pages==="object"&&!Array.isArray(s.pages))?s.pages:{};
  s.practice=(s.practice&&typeof s.practice==="object"&&!Array.isArray(s.practice))?s.practice:{};
  s.sim=(s.sim&&typeof s.sim==="object"&&!Array.isArray(s.sim))?s.sim:{};
  s.reinforce=(s.reinforce&&typeof s.reinforce==="object"&&!Array.isArray(s.reinforce))?s.reinforce:{};
