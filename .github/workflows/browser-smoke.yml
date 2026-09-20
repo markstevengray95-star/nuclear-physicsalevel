@@ -1,0 +1,38 @@
+name: Browser interaction smoke test
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start app
+        run: |
+          PORT=3000 node server.js > /tmp/nuclear-server.log 2>&1 &
+          echo $! > /tmp/nuclear-server.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/nuclear-server.log
+          exit 1
+      - name: Exercise real browser interactions
+        run: node browser-smoke.mjs
+      - name: Show server log on failure
+        if: failure()
+        run: cat /tmp/nuclear-server.log || true
