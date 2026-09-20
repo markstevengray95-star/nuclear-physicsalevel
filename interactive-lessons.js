@@ -319,6 +319,7 @@ function S(i){
  if(!s||typeof s!=="object")s=state[i]={};
  s.starter=(s.starter&&typeof s.starter==="object"&&!Array.isArray(s.starter))?s.starter:{};
  s.exam=(s.exam&&typeof s.exam==="object"&&!Array.isArray(s.exam))?s.exam:{};
+ s.conceptChecks=(s.conceptChecks&&typeof s.conceptChecks==="object"&&!Array.isArray(s.conceptChecks))?s.conceptChecks:{};
  s.pages=(s.pages&&typeof s.pages==="object"&&!Array.isArray(s.pages))?s.pages:{};
  s.practice=(s.practice&&typeof s.practice==="object"&&!Array.isArray(s.practice))?s.practice:{};
  s.sim=(s.sim&&typeof s.sim==="object"&&!Array.isArray(s.sim))?s.sim:{};
@@ -328,14 +329,19 @@ function S(i){
  s.reinforce.explain=!!s.reinforce.explain;
  s.worked=Number.isFinite(Number(s.worked))?Math.max(0,Number(s.worked)):0;
  s.short=!!s.short;
+ s.shortAnswer=typeof s.shortAnswer==="string"?s.shortAnswer:"";
+ s.simNotes=(s.simNotes&&typeof s.simNotes==="object"&&!Array.isArray(s.simNotes))?s.simNotes:{};
+ s.simNotes.prediction=typeof s.simNotes.prediction==="string"?s.simNotes.prediction:"";
+ s.simNotes.explanation=typeof s.simNotes.explanation==="string"?s.simNotes.explanation:"";
  s.exitBest=Number.isFinite(Number(s.exitBest))?Math.max(0,Math.min(3,Number(s.exitBest))):0;
  s.tab=VALID_TABS.has(s.tab)?s.tab:"starter";
  return s;
 }
 function pct(i){
- const p=P[i],s=S(i);let done=0,total=3+p.learn.length+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+EXAM[i].length+1;
+ const p=P[i],s=S(i);let done=0,total=3+(p.learn.length*2)+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+EXAM[i].length+1;
  done+=Object.values(s.starter).filter(Boolean).length;
  done+=Object.values(s.pages).filter(Boolean).length;
+ done+=Object.values(s.conceptChecks).filter(Boolean).length;
  if(s.worked>=p.worked.steps.length)done++;
  done+=Object.values(s.practice).filter(Boolean).length;
  if(s.short)done++;
@@ -383,28 +389,64 @@ function starterQuestions(i){
   {q:"Which definition best matches “"+vocab[0]+"”?",opts:defs,a:0,why:vocab[0]+": "+vocab[1],tag:"Key vocabulary"}
  ];
 }
+function currentObjectives(){
+ return $$(".seq-objectives section:first-child li").map(li=>li.textContent.trim()).filter(Boolean);
+}
+function conceptCheckFor(i,page){
+ const p=P[i];
+ if(page<p.practice.length)return p.practice[page];
+ return p.exit[page%p.exit.length];
+}
+function coreKnowledgeHTML(p){
+ const equations=p.learn.map(x=>x[3]).filter(Boolean);
+ return '<div class="il-core-map"><div><strong>Core knowledge you will build</strong><ol>'+p.learn.map(x=>'<li>'+x[0]+'</li>').join("")+'</ol></div><div><strong>Key language</strong><p>'+p.vocab.map(v=>'<span>'+v[0]+'</span>').join(" ")+'</p>'+(equations.length?'<strong>Key relationships</strong><div class="il-core-equations">'+equations.map(e=>'<code>'+e+'</code>').join("")+'</div>':'')+'</div></div>';
+}
 function renderStarter(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="starter"]');if(!host)return;
- const qs=starterQuestions(i);
- host.innerHTML='<div class="il-reinforce-head"><div><span class="eyebrow">Do now · 5–8 min</span><h4>Interactive starter</h4><p>Answer from memory before reading the lesson. Immediate feedback helps activate prior knowledge.</p></div><span class="il-badge">'+Object.values(s.starter).filter(Boolean).length+'/3 complete</span></div>'+
- qs.map((q,n)=>'<article class="il-q il-starter-q" data-sq="'+n+'"><span class="il-badge">'+q.tag+'</span><h4>'+(n+1)+'. '+q.q+'</h4><div class="il-options">'+q.opts.map((o,j)=>'<button data-so="'+j+'">'+o+'</button>').join("")+'</div><div class="il-feedback '+(s.starter[n]?'':'hidden')+'">'+(s.starter[n]?'Completed — '+q.why:'')+'</div></article>').join("")+
- '<div class="il-actions"><button class="button primary" id="ilStarterNext">Start learning →</button></div>';
+ const qs=starterQuestions(i),objectives=currentObjectives();
+ const secure=Object.values(s.starter).filter(Boolean).length;
+ host.innerHTML='<div class="il-reinforce-head"><div><span class="eyebrow">Starter / retrieval · 5–8 min</span><h4>Activate prior knowledge</h4><p>Answer from memory first. A question only counts as secure when you get it correct.</p></div><span class="il-badge">'+secure+'/3 secure</span></div>'+
+ '<div class="il-start-grid"><article class="il-card"><h4>Learning objectives</h4><ul>'+(objectives.length?objectives.map(x=>'<li>'+safe(x)+'</li>').join(""):'<li>Build the lesson knowledge and apply it independently.</li>')+'</ul></article><article class="il-card"><h4>Lesson roadmap</h4><p>Retrieval → core knowledge → knowledge checks → worked example → guided practice → independent practice → interactive activity → exam questions → exit ticket.</p></article></div>'+
+ coreKnowledgeHTML(p)+
+ qs.map((q,n)=>'<article class="il-q il-starter-q" data-sq="'+n+'"><span class="il-badge">'+q.tag+'</span><h4>'+(n+1)+'. '+q.q+'</h4><div class="il-options">'+q.opts.map((o,j)=>'<button data-so="'+j+'" '+(s.starter[n]?'disabled':'')+'>'+o+'</button>').join("")+'</div><div class="il-feedback '+(s.starter[n]?'':'hidden')+'">'+(s.starter[n]?'Secure — '+q.why:'')+'</div></article>').join("")+
+ '<div class="il-actions"><button class="button primary" id="ilStarterNext" '+(secure<3?'disabled':'')+'>Start core learning →</button></div>';
  $$(".il-starter-q",host).forEach((box,n)=>$$("[data-so]",box).forEach(b=>b.onclick=()=>{
-   const q=qs[n],choice=Number(b.dataset.so),ok=choice===q.a;
-   s.starter[n]=true;save();
-   $$("[data-so]",box).forEach((x,j)=>{x.disabled=true;if(j===q.a)x.classList.add("correct");if(j===choice&&!ok)x.classList.add("wrong")});
-   const fb=$(".il-feedback",box);fb.classList.remove("hidden");fb.textContent=(ok?"Correct. ":"Review: ")+q.why;updateProgress(i);
+   if(s.starter[n])return;
+   const q=qs[n],choice=Number(b.dataset.so),ok=choice===q.a,fb=$(".il-feedback",box);
+   fb.classList.remove("hidden");
+   if(ok){
+     s.starter[n]=true;save();
+     $$("[data-so]",box).forEach((x,j)=>{x.disabled=true;if(j===q.a)x.classList.add("correct")});
+     fb.textContent="Correct — "+q.why;
+     updateProgress(i);renderStarter(i);
+   }else{
+     b.disabled=true;b.classList.add("wrong");fb.textContent="Not yet — "+q.why+" Try another option.";
+   }
  }));
  $("#ilStarterNext",host).onclick=()=>showTab(i,"learn");
 }
 function renderLearn(i){
- const p=P[i],s=S(i),host=$('[data-il-panel="learn"]'); if(!host)return;
+ const p=P[i],s=S(i),host=$('[data-il-panel="learn"]');if(!host)return;
  let page=Number(host.dataset.page||0);page=Math.max(0,Math.min(p.learn.length-1,page));host.dataset.page=page;
- const [t,b,k,e]=p.learn[page];
- host.innerHTML='<div class="il-lesson-intro"><article class="il-card"><span class="il-badge">Concept '+(page+1)+' / '+p.learn.length+'</span><h4>'+t+'</h4><p>'+b+'</p>'+(e?'<div class="il-equation">'+e+'</div>':'')+'<div class="il-key"><strong>Remember:</strong> '+k+'</div></article><aside class="il-card"><h4>Key vocabulary</h4><div class="il-vocab">'+p.vocab.map(v=>'<div><strong>'+v[0]+'</strong><span>'+v[1]+'</span></div>').join("")+'</div></aside></div>'+
- '<div class="il-page-nav"><button class="button" id="ilPrev" '+(page===0?"disabled":"")+'>← Previous concept</button><div class="il-page-dots">'+p.learn.map((_,n)=>'<span class="il-dot '+(s.pages[n]?"done ":"")+(n===page?"active":"")+'"></span>').join("")+'</div><button class="button primary" id="ilNext">'+(page===p.learn.length-1?"Mark concept read":"Next concept →")+'</button></div>';
+ const [t,b,k,e]=p.learn[page],q=conceptCheckFor(i,page),secure=!!s.conceptChecks[page];
+ host.innerHTML='<div class="il-learning-progress"><span class="il-badge">Core knowledge '+(page+1)+' / '+p.learn.length+'</span><strong>'+p.learn.filter((_,n)=>s.conceptChecks[n]).length+'/'+p.learn.length+' checks secure</strong></div>'+
+ '<div class="il-lesson-intro"><article class="il-card"><h4>'+t+'</h4><p>'+b+'</p>'+(e?'<div class="il-equation">'+e+'</div>':'')+'<div class="il-key"><strong>Core point:</strong> '+k+'</div></article><aside class="il-card"><h4>Key vocabulary</h4><div class="il-vocab">'+p.vocab.map(v=>'<div><strong>'+v[0]+'</strong><span>'+v[1]+'</span></div>').join("")+'</div></aside></div>'+
+ '<article class="il-q il-concept-check" data-cc="'+page+'"><span class="eyebrow">Knowledge check before you move on</span><h4>'+q[0]+'</h4><div class="il-options">'+q[1].map((o,j)=>'<button data-cco="'+j+'" '+(secure?'disabled':'')+'>'+o+'</button>').join("")+'</div><div class="il-feedback '+(secure?'':'hidden')+'">'+(secure?'Secure — '+q[3]:'')+'</div></article>'+
+ '<div class="il-page-nav"><button class="button" id="ilPrev" '+(page===0?"disabled":"")+'>← Previous chunk</button><div class="il-page-dots">'+p.learn.map((_,n)=>'<span class="il-dot '+(s.conceptChecks[n]?"done ":"")+(n===page?"active":"")+'"></span>').join("")+'</div><button class="button primary" id="ilNext" '+(!secure?'disabled':'')+'>'+(page===p.learn.length-1?"Continue to worked example →":"Next knowledge chunk →")+'</button></div>';
+ $$("[data-cco]",host).forEach(btn=>btn.onclick=()=>{
+   if(s.conceptChecks[page])return;
+   const choice=Number(btn.dataset.cco),ok=choice===q[2],box=$(".il-concept-check",host),fb=$(".il-feedback",box);
+   fb.classList.remove("hidden");
+   if(ok){
+     s.conceptChecks[page]=true;s.pages[page]=true;save();
+     $$("[data-cco]",box).forEach((x,j)=>{x.disabled=true;if(j===q[2])x.classList.add("correct")});
+     fb.textContent="Correct — "+q[3];updateProgress(i);renderLearn(i);
+   }else{
+     btn.disabled=true;btn.classList.add("wrong");fb.textContent="Not yet — "+q[3]+" Try another answer.";
+   }
+ });
  $("#ilPrev",host).onclick=()=>{host.dataset.page=page-1;renderLearn(i)};
- $("#ilNext",host).onclick=()=>{s.pages[page]=true;save();updateProgress(i);if(page<p.learn.length-1){host.dataset.page=page+1;renderLearn(i)}else showTab(i,"example")};
+ $("#ilNext",host).onclick=()=>{if(!s.conceptChecks[page])return;if(page<p.learn.length-1){host.dataset.page=page+1;renderLearn(i)}else showTab(i,"example")};
 }
 function renderExample(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="example"]');if(!host)return;
@@ -551,7 +593,7 @@ function showExitResult(i,score,stored){
  host.innerHTML='<div class="il-exit-score"><div class="il-score-ring '+(pass?"pass":"retry")+'">'+score+'/3</div><div class="il-status '+(pass?"pass":"retry")+'"><strong>'+(pass?"Exit ticket passed":"Not secure yet")+'</strong><div>'+(pass?"You have met the exit-ticket threshold. Finish any unticked lesson activities to complete the lesson.":"Review the teaching pages and retry. Your best score is saved.")+'</div></div></div>'+(pass&&isComplete(i)?'<div class="il-complete-banner"><strong>Lesson mastered.</strong> All learning, practice, simulation evidence and exit-ticket requirements are complete.</div>':'');
 }
 function isComplete(i){
- const p=P[i],s=S(i);return Object.values(s.starter).filter(Boolean).length>=3 && Object.values(s.pages).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && Object.values(s.exam).filter(v=>v&&v.completed).length>=EXAM[i].length && s.exitBest>=2;
+ const p=P[i],s=S(i);return Object.values(s.starter).filter(Boolean).length>=3 && Object.values(s.pages).filter(Boolean).length>=p.learn.length && Object.values(s.conceptChecks).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && Object.values(s.exam).filter(v=>v&&v.completed).length>=EXAM[i].length && s.exitBest>=2;
 }
 function syncSequenceCompletion(){
  setTimeout(()=>{
