@@ -10,7 +10,8 @@ await page.addInitScript(() => {
 });
 const errors=[];
 page.on("pageerror",e=>errors.push("PAGE: "+e.message));
-page.on("console",msg=>{ if(msg.type()==="error") errors.push("CONSOLE: "+msg.text()); });\npage.on("response",res=>{ if(res.status()>=400) errors.push("HTTP "+res.status()+" "+res.url()); });
+page.on("console",msg=>{ if(msg.type()==="error") errors.push("CONSOLE: "+msg.text()); });
+page.on("response",res=>{ if(res.status()>=400) errors.push("HTTP "+res.status()+" "+res.url()); });
 
 async function must(sel,label){
   await page.waitForSelector(sel,{state:"visible",timeout:10000});
