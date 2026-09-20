@@ -24,7 +24,7 @@ const qs=[
  {topic:"safety",q:"Why is 'gamma is always the most dangerous radiation' an incomplete statement?",o:["Risk depends on exposure route, activity, time, distance and shielding","Gamma is never hazardous","Only alpha can ionise matter"],a:0,why:"Hazard and risk depend on the exposure situation, not only the radiation label."},
  {topic:"rp12",q:"What should be plotted to test an ideal inverse-square relationship using corrected count rate?",o:["Corrected count rate against distance","Corrected count rate against 1/r²","Background count rate against time"],a:1,why:"A linear relationship between corrected count rate and 1/r² supports the inverse-square model."}
 ];
-let state=JSON.parse(localStorage.getItem(STORE)||"{}");
+let state={};try{state=JSON.parse(localStorage.getItem(STORE)||"{}")}catch{state={}}
 let current=0,locked=false;
 function save(){localStorage.setItem(STORE,JSON.stringify(state))}
 function scores(){
@@ -34,15 +34,22 @@ function overall(){
  const vals=Object.values(scores()).filter(v=>v!==null);return vals.length?Math.round(100*vals.reduce((a,b)=>a+b,0)/vals.length):0;
 }
 function openSim(name){
+ if(name==="Rutherford scattering"){
+   const full=$('.nav-button[data-view="rutherfordexp"]');
+   if(full){full.click();return}
+ }
  const lab=$('.nav-button[data-view="lab"]');if(lab)lab.click();
- setTimeout(()=>{const b=$$(".sim-tab").find(x=>x.textContent.trim()===name);if(b)b.click();},80);
+ setTimeout(()=>{const b=$(".sim-tab").find(x=>x.textContent.trim()===name);if(b)b.click();},80);
 }
 function openTopic(code){
- const course=$('.nav-button[data-view="course"]');if(course)course.click();
+ const sequenceBtn=$('.nav-button[data-view="sequence"]');
+ if(sequenceBtn)sequenceBtn.click();
  setTimeout(()=>{
-  const step=$$(".seq-step").find(x=>x.textContent.includes(code))||$$(".course-button").find(x=>x.textContent.includes(code));
-  if(step)step.click();
- },80);
+  const step=$(".seq-step").find(x=>x.textContent.includes(code));
+  if(step){step.click();step.scrollIntoView({block:"center",behavior:"smooth"});return}
+  const course=$('.nav-button[data-view="course"]');if(course)course.click();
+  setTimeout(()=>{const fallback=$(".course-button").find(x=>x.textContent.includes(code));if(fallback)fallback.click()},60);
+ },100);
 }
 function weakest(){
  const sc=scores();
@@ -84,13 +91,34 @@ function renderMetersOnly(){
  const w=weakest();$("#nextStep").innerHTML='<strong>Recommended next step:</strong> '+w.code+' · '+w.name+'<div class="notebook-actions"><button class="button primary" id="nextLessonMastery">Open lesson</button><button class="button" id="nextSimMastery">Open simulation</button></div>';
  $("#nextLessonMastery").onclick=()=>openTopic(w.code);$("#nextSimMastery").onclick=()=>openSim(w.sim);
 }
+function openMasteryHub(){
+ $$(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.view==="mastery"));
+ $$(".view").forEach(v=>v.classList.toggle("active-view",v.id==="view-mastery"));
+ renderHub();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
 function buildHub(){
- const nav=$(".main-nav"),main=$("main");if(!nav||!main||$("#view-mastery"))return;
- const btn=document.createElement("button");btn.className="nav-button";btn.dataset.view="mastery";btn.textContent="A* mastery hub";nav.appendChild(btn);
- const sec=document.createElement("section");sec.className="view";sec.id="view-mastery";
- sec.innerHTML='<div class="section-head"><div><span class="eyebrow">Adaptive revision</span><h2>A* mastery hub</h2></div><p class="muted">Use the diagnostic to find weak areas, then jump straight to the right lesson or simulation.</p></div><div class="mastery-grid"><article class="panel mastery-panel"><div class="progress-head"><strong>Diagnostic mastery</strong><strong id="masteryOverall">0%</strong></div><div id="masteryTopics" class="mastery-topic-list"></div><div id="nextStep" class="next-step"></div></article><article class="panel mastery-panel"><span class="eyebrow">Diagnostic check</span><div id="diagQuestion"></div></article></div><article class="panel mastery-panel" style="margin-top:16px"><h3>Command-word coach</h3><div class="command-grid"><div class="command-card"><strong>Describe</strong><span>State what the data, graph or model shows. Do not add a mechanism unless asked.</span></div><div class="command-card"><strong>Explain</strong><span>Build a cause → physics principle → effect chain using precise nuclear terminology.</span></div><div class="command-card"><strong>Calculate</strong><span>Write the equation, substitute in SI-compatible units, calculate, give units and check magnitude.</span></div><div class="command-card"><strong>Evaluate</strong><span>Use evidence on both benefits and limitations, then make a justified conclusion tied to the context.</span></div></div></article>';
- footer.parentNode.insertBefore(sec,footer);
- btn.addEventListener("click",()=>renderHub());
+ const nav=$(".main-nav"),main=$("main");if(!nav||!main)return;
+ let btn=$('.nav-button[data-view="mastery"]');
+ if(!btn){
+   btn=document.createElement("button");btn.className="nav-button";btn.dataset.view="mastery";btn.textContent="A* mastery hub";nav.appendChild(btn);
+   btn.addEventListener("click",openMasteryHub);
+ }
+ let sec=$("#view-mastery");
+ if(!sec){
+   sec=document.createElement("section");sec.className="view";sec.id="view-mastery";
+   sec.innerHTML='<div class="section-head"><div><span class="eyebrow">Adaptive revision</span><h2>A* mastery hub</h2></div><p class="muted">Diagnose weak areas, revisit the exact lesson, then push into A* reasoning and exam technique.</p></div>'+
+   '<div class="mastery-grid"><article class="panel mastery-panel"><div class="progress-head"><strong>Diagnostic mastery</strong><strong id="masteryOverall">0%</strong></div><div id="masteryTopics" class="mastery-topic-list"></div><div id="nextStep" class="next-step"></div></article>'+
+   '<article class="panel mastery-panel"><span class="eyebrow">Diagnostic check</span><div id="diagQuestion"></div></article></div>'+
+   '<article class="panel mastery-panel" style="margin-top:16px"><div class="section-head"><div><span class="eyebrow">A* reasoning ladder</span><h3>Move beyond recall</h3></div><p class="muted">Use these four habits on unfamiliar questions.</p></div><div class="command-grid">'+
+   '<div class="command-card"><strong>1 · Evidence</strong><span>State exactly what the observation, graph or numerical result shows before explaining it.</span></div>'+
+   '<div class="command-card"><strong>2 · Physics link</strong><span>Name the relevant interaction, model or equation and connect it explicitly to the evidence.</span></div>'+
+   '<div class="command-card"><strong>3 · Quantify</strong><span>Use a proportional relationship, gradient, uncertainty or calculation whenever the information allows it.</span></div>'+
+   '<div class="command-card"><strong>4 · Evaluate</strong><span>State model assumptions or limitations and make a conclusion that is justified by the evidence.</span></div>'+
+   '</div></article>'+
+   '<article class="panel mastery-panel" style="margin-top:16px"><h3>Command-word coach</h3><div class="command-grid"><div class="command-card"><strong>Describe</strong><span>State what the data, graph or model shows. Do not add a mechanism unless asked.</span></div><div class="command-card"><strong>Explain</strong><span>Build a cause → physics principle → effect chain using precise nuclear terminology.</span></div><div class="command-card"><strong>Calculate</strong><span>Write the equation, substitute in compatible units, calculate, give units and check magnitude.</span></div><div class="command-card"><strong>Evaluate</strong><span>Use evidence, limitations and a justified conclusion tied to the context.</span></div></div></article>';
+   main.appendChild(sec);
+ }
  renderHub();
 }
 function controlsSnapshot(){
