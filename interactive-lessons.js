@@ -289,7 +289,7 @@ function renderPractice(i){
  '<div class="il-actions"><button class="button primary" id="ilToSim">Continue to simulation task →</button></div>';
  $$(".il-q",host).forEach((box,n)=>{
    const q=p.practice[n]; $$("[data-po]",box).forEach(b=>b.onclick=()=>{
-     if(s.practice[n])return;const choice=Number(b.dataset.po),ok=choice===q[2];s.practice[n]=true;save();
+     const choice=Number(b.dataset.po),ok=choice===q[2];s.practice[n]=true;save();
      $$("[data-po]",box).forEach((x,j)=>{x.disabled=true;if(j===q[2])x.classList.add("correct");if(j===choice&&!ok)x.classList.add("wrong")});
      const fb=$(".il-feedback",box);fb.classList.remove("hidden");fb.textContent=(ok?"Correct. ":"Not quite. ")+q[3];updateProgress(i);
    });
@@ -338,9 +338,26 @@ function syncSequenceCompletion(){
  },80);
 }
 function updateProgress(i){
- const root=$("#"+ROOT_ID);if(!root)return;const v=pct(i);$("#ilPct",root).textContent=v+"% lesson progress";$("#ilBar",root).style.width=v+"%";
+ const root=$("#"+ROOT_ID);if(!root)return;
+ const v=pct(i), label=v+"% lesson progress", width=v+"%";
+ const pctNode=$("#ilPct",root), bar=$("#ilBar",root);
+ if(pctNode && pctNode.textContent!==label)pctNode.textContent=label;
+ if(bar && bar.style.width!==width)bar.style.width=width;
 }
-const observer=new MutationObserver(()=>{if($("#view-sequence.active-view")||$(".seq-main"))inject()});
-observer.observe(document.body,{childList:true,subtree:true});
-setTimeout(inject,120);
+function attachSequenceWatcher(){
+ const root=$("#seqRoot");
+ if(!root){setTimeout(attachSequenceWatcher,100);return}
+ const observer=new MutationObserver(mutations=>{
+   if(mutations.some(m=>m.type==="childList" && m.target===root)){
+     requestAnimationFrame(()=>inject());
+   }
+ });
+ observer.observe(root,{childList:true});
+ document.addEventListener("click",e=>{
+   const trigger=e.target.closest("[data-lesson],[data-mode],#seqNext,#seqPrevious,#seqComplete,#teacherComplete,[data-mastery]");
+   if(trigger)setTimeout(inject,0);
+ });
+ inject();
+}
+setTimeout(attachSequenceWatcher,120);
 })();
