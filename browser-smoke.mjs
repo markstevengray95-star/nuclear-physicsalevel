@@ -36,8 +36,20 @@ try{
 
   await page.click('[data-il-tab="learn"]');
   await must('[data-il-panel="learn"].active',"learn tab opens");
+  await must("[data-cco]","knowledge check renders");
+  if(!(await page.locator("#ilNext").isDisabled())) throw new Error("Next knowledge chunk should be locked before a correct check");
+  const conceptOptions=page.locator("[data-cco]");
+  for(let n=0;n<await conceptOptions.count();n++){
+    const btn=conceptOptions.nth(n);
+    if(await btn.isDisabled()) continue;
+    await btn.click();
+    await page.waitForTimeout(30);
+    if(!(await page.locator("#ilNext").isDisabled())) break;
+  }
+  if(await page.locator("#ilNext").isDisabled()) throw new Error("Knowledge check could not be completed");
+  console.log("PASS knowledge-check gate");
   await page.click("#ilNext");
-  console.log("PASS concept next");
+  console.log("PASS next knowledge chunk");
 
   await page.click('[data-il-tab="example"]');
   await must('[data-il-panel="example"].active',"worked example opens");
@@ -46,12 +58,27 @@ try{
 
   await page.click('[data-il-tab="practice"]');
   await must('[data-il-panel="practice"].active',"practice opens");
-  await page.locator('[data-pq="0"] [data-po]').first().click();
-  console.log("PASS practice answer");
+  const practiceOptions=page.locator('[data-pq="0"] [data-po]');
+  for(let n=0;n<await practiceOptions.count();n++){
+    const btn=practiceOptions.nth(n);
+    if(await btn.isDisabled()) continue;
+    await btn.click();
+    await page.waitForTimeout(20);
+    if((await page.locator('[data-pq="0"] .il-feedback').innerText()).startsWith("Correct")) break;
+  }
+  await page.locator("#ilShort").fill("A complete physics explanation using the relevant model and relationship.");
+  await page.click("#ilModelBtn");
+  console.log("PASS guided practice answer");
 
   await page.click('[data-il-tab="reinforce"]');
   await must('[data-il-panel="reinforce"].active',"reinforce opens");
   await must(".il-vocab-q","reinforcement tasks render");
+
+  await page.click('[data-il-tab="simulation"]');
+  await must('[data-il-panel="simulation"].active',"simulation activity opens");
+  await page.locator("#ilPrediction").fill("I predict the measured quantity will change because the relevant physical relationship changes.");
+  await page.locator("#ilExplanation").fill("The simulation result supports the prediction because the displayed change follows the relevant nuclear physics model.");
+  console.log("PASS simulation written responses");
 
   await page.click('[data-il-tab="exam"]');
   await must('[data-il-panel="exam"].active',"exam questions open");
