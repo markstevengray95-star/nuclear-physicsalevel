@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const ROOT_ID="interactiveLessonWorkspace", STORE="aqaNuclearInteractiveV1";
-const VALID_TABS=new Set(["learn","example","practice","reinforce","simulation","exit"]);
+const VALID_TABS=new Set(["starter","learn","example","practice","reinforce","simulation","exam","exit"]);
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const safe=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let state={};try{state=JSON.parse(localStorage.getItem(STORE)||"{}")}catch{}
@@ -367,7 +367,7 @@ function wire(i){
 }
 function showTab(i,tab){
  const root=$("#"+ROOT_ID);if(!root)return;
- const s=S(i),next=VALID_TABS.has(tab)?tab:"learn";s.tab=next;save();
+ const s=S(i),next=VALID_TABS.has(tab)?tab:"starter";s.tab=next;save();
  $$("[data-il-tab]",root).forEach(b=>b.classList.toggle("active",b.dataset.ilTab===next));
  $$("[data-il-panel]",root).forEach(x=>x.classList.toggle("active",x.dataset.ilPanel===next));
 }
