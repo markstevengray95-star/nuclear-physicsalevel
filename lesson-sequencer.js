@@ -237,7 +237,11 @@ function wireLesson(){
 }
 function toggleDone(){const id=sequence[state.current].id;state.done[id]=!state.done[id];save();render()}
 function openSim(id){
- const tabs=$$(".sim-tab"); const idx=tabs.findIndex(b=>b.textContent.toLowerCase().includes(simName(id).split(" ")[0].toLowerCase()));
+ if(id==="rutherford"){
+   const full=$('.nav-button[data-view="rutherfordexp"]');
+   if(full){full.click();return;}
+ }
+ const tabs=$(".sim-tab"); const idx=tabs.findIndex(b=>b.textContent.toLowerCase().includes(simName(id).split(" ")[0].toLowerCase()));
  const labBtn=$('.nav-button[data-view="lab"]'); if(labBtn)labBtn.click();
  if(idx>=0)setTimeout(()=>tabs[idx].click(),60);
 }
