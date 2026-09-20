@@ -260,7 +260,7 @@ function renderPlatformTab(tab){
  state.ui.tab=tab;save();
  $$(".lp-tab").forEach(b=>b.classList.toggle("active",b.dataset.lpTab===tab));
  $$(".lp-panel").forEach(p=>p.classList.toggle("active",p.id===`lp-${tab}`));
- ({today:renderToday,diagnostic:renderDiagnostic,retrieval:renderRetrieval,misconceptions:renderMisconceptions,confidence:renderConfidence,calculations:renderCalculations,challenges:renderChallenges,glossary:renderGlossary,paper:renderPaper,teacher:renderTeacher,reports:renderReports}[tab]||(()=>{}))();
+ ({today:renderToday,diagnostic:renderDiagnostic,retrieval:renderRetrieval,misconceptions:renderMisconceptions,confidence:renderConfidence,calculations:renderCalculations,challenges:renderChallenges,glossary:renderGlossary,paper:renderPaper,teacher:renderTeacher,reports:renderReports,settings:renderSettings}[tab]||(()=>{}))();
 }
 function buildPlatformView(){
  const nav=$(".main-nav"),main=$("main");if(!nav||!main)return;
@@ -444,6 +444,43 @@ function renderReports(){
  $("#lpPrintReport",host).onclick=()=>window.print();
  $("#lpReportCode",host).onclick=()=>{$("#lpReportCodeBox",host).innerHTML=`<label class="lp-field"><span>Shareable progress code</span><textarea readonly>${encodeCode(progressPayload($("#lpReportName",host).value||"Student"))}</textarea></label>`};
 }
+
+
+/* Feature: accessibility, read-aloud and offline/install state */
+let installPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;renderIfOpen()});
+function applyAccessibility(){
+ const a=state.accessibility;
+ document.body.classList.toggle("lp-font-large",!!a.largeText);
+ document.body.classList.toggle("lp-high-contrast",!!a.highContrast);
+ document.body.classList.toggle("lp-dyslexia",!!a.dyslexia);
+ document.body.classList.toggle("lp-focus-mode",!!a.focusMode);
+ document.body.classList.toggle("lp-reduce-motion",!!a.reduceMotion);
+}
+function speakActiveView(){
+ if(!("speechSynthesis" in window))return false;
+ speechSynthesis.cancel();
+ const view=$(".view.active-view")||document.querySelector("main");
+ const text=(view?.innerText||"").replace(/\s+/g," ").trim().slice(0,12000);
+ if(!text)return false;
+ const u=new SpeechSynthesisUtterance(text);u.rate=.95;speechSynthesis.speak(u);return true;
+}
+function renderSettings(){
+ const host=$("#lp-settings");if(!host)return;const a=state.accessibility;
+ const online=navigator.onLine;
+ host.innerHTML=`<div class="lp-grid"><article class="lp-card"><span class="eyebrow">Accessibility</span><h3>Reading and display controls</h3>
+ ${[["largeText","Larger text"],["highContrast","Higher contrast"],["dyslexia","Dyslexia-friendly spacing/font"],["reduceMotion","Reduce animation"],["focusMode","Focus mode — hide page chrome"]].map(([k,label])=>`<label class="lp-toggle"><span>${label}</span><input type="checkbox" data-a11y="${k}" ${a[k]?"checked":""}></label>`).join("")}
+ <div class="lp-actions"><button type="button" id="lpReadAloud">Read current page aloud</button><button type="button" id="lpStopSpeech">Stop reading</button></div><p class="muted small">Read-aloud uses the browser's built-in speech engine when available.</p></article>
+ <article class="lp-card"><span class="eyebrow">Offline / installable</span><h3>Use like an app</h3><div class="lp-feedback ${online?"lp-good":"lp-warn"}"><strong>${online?"Online":"Offline"}</strong><p>${online?"Core files are cached after use so the course can reopen with limited/no connection.":"You are currently using the offline cache where available."}</p></div><div class="lp-actions"><button type="button" class="primary" id="lpInstallApp" ${installPrompt?"":"disabled"}>Install app</button><button type="button" id="lpRefreshCache">Refresh offline cache</button></div><p class="muted small">${installPrompt?"Installation is available in this browser.":"If this button is disabled, use your browser's Install/Add to Home Screen option when supported."}</p><div id="lpOfflineFb"></div></article></div>`;
+ $("[data-a11y]",host).forEach(c=>c.onchange=()=>{state.accessibility[c.dataset.a11y]=c.checked;save();applyAccessibility()});
+ $("#lpReadAloud",host).onclick=()=>{if(!speakActiveView())alert("Read-aloud is not available in this browser.")};
+ $("#lpStopSpeech",host).onclick=()=>{if("speechSynthesis" in window)speechSynthesis.cancel()};
+ $("#lpInstallApp",host).onclick=async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;renderSettings()};
+ $("#lpRefreshCache",host).onclick=async()=>{try{const reg=await navigator.serviceWorker?.getRegistration();if(reg)await reg.update();$("#lpOfflineFb",host).innerHTML='<div class="lp-feedback lp-good">Offline cache update requested.</div>'}catch{$("#lpOfflineFb",host).innerHTML='<div class="lp-feedback lp-warn">The browser could not refresh the offline cache.</div>'}};
+}
+window.addEventListener("online",()=>renderIfOpen());window.addEventListener("offline",()=>renderIfOpen());
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+applyAccessibility();
 
 /*__LP_FEATURES__*/ 
 })();
