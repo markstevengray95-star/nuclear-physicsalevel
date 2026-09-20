@@ -233,14 +233,17 @@ exit:[["Best synoptic habit is to…",["identify model before calculation","comb
 function currentIndex(){
  const b=$(".seq-step.active[data-lesson]"); return b?Number(b.dataset.lesson):0;
 }
-function S(i){if(!state[i])state[i]={pages:{},practice:{},sim:{},worked:0,short:false,exitBest:0,tab:"learn"};return state[i]}
+function S(i){if(!state[i])state[i]={pages:{},practice:{},sim:{},worked:0,short:false,reinforce:{vocab:{},sequence:false,explain:false},exitBest:0,tab:"learn"};state[i].reinforce=state[i].reinforce||{vocab:{},sequence:false,explain:false};state[i].reinforce.vocab=state[i].reinforce.vocab||{};return state[i]}
 function pct(i){
- const p=P[i],s=S(i);let done=0,total=p.learn.length+1+p.practice.length+1+p.sim[1].length+1;
+ const p=P[i],s=S(i);let done=0,total=p.learn.length+1+p.practice.length+1+p.sim[1].length+p.vocab.length+2+1;
  done+=Object.values(s.pages).filter(Boolean).length;
  if(s.worked>=p.worked.steps.length)done++;
  done+=Object.values(s.practice).filter(Boolean).length;
  if(s.short)done++;
  done+=Object.values(s.sim).filter(Boolean).length;
+ done+=Object.values(s.reinforce.vocab).filter(Boolean).length;
+ if(s.reinforce.sequence)done++;
+ if(s.reinforce.explain)done++;
  if(s.exitBest>=2)done++;
  return Math.round(100*done/total);
 }
@@ -251,8 +254,8 @@ function inject(){
  if(old)old.remove();
  const p=P[i],s=S(i);const wrap=document.createElement("section");wrap.id=ROOT_ID;wrap.className="il-shell";wrap.dataset.lesson=i;
  wrap.innerHTML='<div class="il-head"><div><span class="eyebrow">Complete student lesson</span><h3>'+safe(p.title)+'</h3><p>'+p.intro+'</p></div><div class="il-progress"><strong id="ilPct">'+pct(i)+'% lesson progress</strong><div class="il-track"><i id="ilBar" style="width:'+pct(i)+'%"></i></div></div></div>'+
- '<div class="il-tabs">'+["learn","example","practice","simulation","exit"].map((t,n)=>'<button class="il-tab '+(s.tab===t?"active":"")+'" data-il-tab="'+t+'">'+(n+1)+'. '+({learn:"Learn",example:"Worked example",practice:"Practice",simulation:"Simulation task",exit:"Exit ticket"}[t])+'</button>').join("")+'</div>'+
- '<div class="il-body"><div class="il-panel" data-il-panel="learn"></div><div class="il-panel" data-il-panel="example"></div><div class="il-panel" data-il-panel="practice"></div><div class="il-panel" data-il-panel="simulation"></div><div class="il-panel" data-il-panel="exit"></div></div>';
+ '<div class="il-tabs">'+["learn","example","practice","reinforce","simulation","exit"].map((t,n)=>'<button class="il-tab '+(s.tab===t?"active":"")+'" data-il-tab="'+t+'">'+(n+1)+'. '+({learn:"Learn",example:"Worked example",practice:"Practice",reinforce:"Reinforce",simulation:"Simulation task",exit:"Exit ticket"}[t])+'</button>').join("")+'</div>'+
+ '<div class="il-body"><div class="il-panel" data-il-panel="learn"></div><div class="il-panel" data-il-panel="example"></div><div class="il-panel" data-il-panel="practice"></div><div class="il-panel" data-il-panel="reinforce"></div><div class="il-panel" data-il-panel="simulation"></div><div class="il-panel" data-il-panel="exit"></div></div>';
  const obj=$(".seq-objectives",main); if(obj)obj.insertAdjacentElement("afterend",wrap); else main.prepend(wrap);
  wire(i);
  showTab(i,s.tab);
@@ -260,7 +263,7 @@ function inject(){
 function wire(i){
  const root=$("#"+ROOT_ID);
  $$("[data-il-tab]",root).forEach(b=>b.addEventListener("click",()=>showTab(i,b.dataset.ilTab)));
- renderLearn(i);renderExample(i);renderPractice(i);renderSimulation(i);renderExit(i);
+ renderLearn(i);renderExample(i);renderPractice(i);renderReinforce(i);renderSimulation(i);renderExit(i);
 }
 function showTab(i,tab){
  const root=$("#"+ROOT_ID),s=S(i);s.tab=tab;save();
@@ -295,7 +298,74 @@ function renderPractice(i){
    });
  });
  $("#ilModelBtn",host).onclick=()=>{s.short=true;save();$("#ilShortModel",host).classList.remove("hidden");updateProgress(i)};
- $("#ilToSim",host).onclick=()=>showTab(i,"simulation");
+ $("#ilToSim",host).textContent="Continue to reinforcement →";$("#ilToSim",host).onclick=()=>showTab(i,"reinforce");
+}
+
+function shuffledIndices(n,seed){
+ const arr=Array.from({length:n},(_,i)=>i);let x=(seed+1)*2654435761>>>0;
+ for(let i=n-1;i>0;i--){x=(1664525*x+1013904223)>>>0;const j=x%(i+1);[arr[i],arr[j]]=[arr[j],arr[i]]}
+ return arr;
+}
+function renderReinforce(i){
+ const p=P[i],s=S(i),host=$('[data-il-panel="reinforce"]');if(!host)return;
+ const seqOrder=shuffledIndices(p.worked.steps.length,i+17);
+ const vocabDone=Object.values(s.reinforce.vocab).filter(Boolean).length;
+ host.innerHTML=
+ '<div class="il-reinforce-head"><div><span class="eyebrow">Build and strengthen</span><h4>Reinforcement tasks</h4><p>Complete these after the first practice. They move from precise vocabulary → method → explanation.</p></div><span class="il-badge">'+vocabDone+'/'+p.vocab.length+' vocabulary secure</span></div>'+
+ '<article class="il-card il-reinforce-card"><div class="il-task-number">1</div><div><h4>Vocabulary retrieval</h4><p class="muted">Choose the correct definition for each key term. Your progress is saved.</p><div id="ilVocabTasks" class="il-vocab-tasks"></div></div></article>'+
+ '<article class="il-card il-reinforce-card"><div class="il-task-number">2</div><div><h4>Build the method</h4><p>'+p.worked.q+'</p><p class="muted">Click the steps in the correct order. If you make a mistake, the sequence resets so you can try again.</p><div id="ilSequencePool" class="il-sequence-pool"></div><div id="ilSequenceChosen" class="il-sequence-chosen"></div><div id="ilSequenceFeedback" class="il-feedback hidden"></div></div></article>'+
+ '<article class="il-card il-reinforce-card"><div class="il-task-number">3</div><div><h4>Explain it from memory</h4><p>'+p.short[0]+'</p><textarea id="ilReinforceExplain" class="il-long-answer" placeholder="Write your explanation without looking back first."></textarea><div class="il-keyword-strip"><strong>Try to use:</strong> '+p.vocab.slice(0,4).map(v=>'<span>'+v[0]+'</span>').join("")+'</div><div class="il-actions"><button class="button primary" id="ilCheckExplain">Check my explanation</button><button class="button" id="ilRevealExplain">Reveal model answer</button></div><div id="ilExplainFeedback" class="il-feedback hidden"></div><div id="ilExplainModel" class="il-model hidden"><strong>Model response:</strong> '+p.short[1]+'</div></div></article>'+
+ '<div class="il-actions"><button class="button primary" id="ilReinforceNext">Continue to simulation task →</button></div>';
+ renderVocabTasks(i);
+ renderSequenceTask(i,seqOrder,[]);
+ $("#ilCheckExplain",host).onclick=()=>checkReinforceExplain(i);
+ $("#ilRevealExplain",host).onclick=()=>{s.reinforce.explain=true;save();$("#ilExplainModel",host).classList.remove("hidden");updateProgress(i)};
+ $("#ilReinforceNext",host).onclick=()=>showTab(i,"simulation");
+}
+function renderVocabTasks(i){
+ const p=P[i],s=S(i),box=$("#ilVocabTasks");if(!box)return;
+ box.innerHTML=p.vocab.map((v,n)=>{
+   const distract=shuffledIndices(p.vocab.length,i*31+n+5).filter(x=>x!==n).slice(0,2);
+   const ids=shuffledIndices(3,i*41+n+11), defs=[n,...distract];
+   return '<div class="il-vocab-q" data-vq="'+n+'"><strong>'+v[0]+'</strong><div class="il-mini-options">'+ids.map(slot=>{const idx=defs[slot];return '<button data-vdef="'+idx+'" '+(s.reinforce.vocab[n]?'disabled':'')+'>'+p.vocab[idx][1]+'</button>'}).join("")+'</div><div class="il-feedback '+(s.reinforce.vocab[n]?'':'hidden')+'">'+(s.reinforce.vocab[n]?'Secure — '+v[1]:'')+'</div></div>';
+ }).join("");
+ $$(".il-vocab-q",box).forEach((q,n)=>$$("[data-vdef]",q).forEach(b=>b.onclick=()=>{
+   const ok=Number(b.dataset.vdef)===n,fb=$(".il-feedback",q);
+   if(ok){
+     s.reinforce.vocab[n]=true;save();
+     $$("[data-vdef]",q).forEach(x=>{x.disabled=true;if(Number(x.dataset.vdef)===n)x.classList.add("correct")});
+     fb.classList.remove("hidden");fb.textContent="Correct — "+p.vocab[n][1];updateProgress(i);
+   }else{
+     b.classList.add("wrong");fb.classList.remove("hidden");fb.textContent="Not quite. Use the lesson meaning, not just a familiar-sounding phrase.";
+   }
+ }));
+}
+function renderSequenceTask(i,order,chosen){
+ const p=P[i],s=S(i),pool=$("#ilSequencePool"),out=$("#ilSequenceChosen"),fb=$("#ilSequenceFeedback");if(!pool||!out||!fb)return;
+ pool.innerHTML=order.filter(idx=>!chosen.includes(idx)).map(idx=>'<button class="il-seq-chip" data-stepidx="'+idx+'">'+p.worked.steps[idx]+'</button>').join("");
+ out.innerHTML=chosen.length?chosen.map((idx,n)=>'<div class="il-seq-picked"><span>'+(n+1)+'</span>'+p.worked.steps[idx]+'</div>').join(""):'<span class="muted">Your ordered steps will appear here.</span>';
+ $$("[data-stepidx]",pool).forEach(b=>b.onclick=()=>{
+   const idx=Number(b.dataset.stepidx),expected=chosen.length;
+   if(idx!==expected){
+     fb.classList.remove("hidden");fb.textContent="That step does not come next. Resetting the chain — decide what must happen first.";
+     setTimeout(()=>renderSequenceTask(i,order,[]),500);return;
+   }
+   const next=[...chosen,idx];
+   if(next.length===p.worked.steps.length){
+     s.reinforce.sequence=true;save();fb.classList.remove("hidden");fb.textContent="Method complete. You built the reasoning in the correct order.";updateProgress(i);
+   }
+   renderSequenceTask(i,order,next);
+ });
+ if(s.reinforce.sequence){fb.classList.remove("hidden");fb.textContent="Method already secured. Rebuild it again if you want more practice."}
+}
+function checkReinforceExplain(i){
+ const p=P[i],s=S(i),text=($("#ilReinforceExplain")?.value||"").trim(),fb=$("#ilExplainFeedback");
+ const terms=p.vocab.slice(0,4).map(v=>v[0].toLowerCase()).filter(x=>x.length>1);
+ const low=text.toLowerCase(),hits=terms.filter(t=>low.includes(t)).length;
+ fb.classList.remove("hidden");
+ if(text.length<45){fb.textContent="Develop this further. Aim for a complete cause → physics idea → effect explanation.";return}
+ s.reinforce.explain=true;save();updateProgress(i);
+ fb.textContent=hits>=2?"Good: your explanation uses lesson-specific vocabulary. Compare it with the model answer and improve precision.":"Your reasoning has enough detail, but strengthen it by using more of the lesson's precise vocabulary before comparing with the model answer.";
 }
 function renderSimulation(i){
  const p=P[i],s=S(i),host=$('[data-il-panel="simulation"]');if(!host)return;
@@ -329,7 +399,7 @@ function showExitResult(i,score,stored){
  host.innerHTML='<div class="il-exit-score"><div class="il-score-ring '+(pass?"pass":"retry")+'">'+score+'/3</div><div class="il-status '+(pass?"pass":"retry")+'"><strong>'+(pass?"Exit ticket passed":"Not secure yet")+'</strong><div>'+(pass?"You have met the exit-ticket threshold. Finish any unticked lesson activities to complete the lesson.":"Review the teaching pages and retry. Your best score is saved.")+'</div></div></div>'+(pass&&isComplete(i)?'<div class="il-complete-banner"><strong>Lesson mastered.</strong> All learning, practice, simulation evidence and exit-ticket requirements are complete.</div>':'');
 }
 function isComplete(i){
- const p=P[i],s=S(i);return Object.values(s.pages).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && s.exitBest>=2;
+ const p=P[i],s=S(i);return Object.values(s.pages).filter(Boolean).length>=p.learn.length && s.worked>=p.worked.steps.length && Object.values(s.practice).filter(Boolean).length>=p.practice.length && s.short && Object.values(s.reinforce.vocab).filter(Boolean).length>=p.vocab.length && s.reinforce.sequence && s.reinforce.explain && Object.values(s.sim).filter(Boolean).length>=p.sim[1].length && s.exitBest>=2;
 }
 function syncSequenceCompletion(){
  setTimeout(()=>{
