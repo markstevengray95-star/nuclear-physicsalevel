@@ -27,17 +27,23 @@ jobs:
           test -s simulation-upgrades.js
           test -s interactive-lessons.css
           test -s interactive-lessons.js
+          test -s rutherford-experiment.css
+          test -s rutherford-experiment.js
+          test -s vendor/three.module.min.js
       - name: Check JavaScript syntax
         run: |
           node --check app.js
           node --check lesson-sequencer.js
           node --check simulation-upgrades.js
           node --check interactive-lessons.js
+          node --check rutherford-experiment.js
       - name: Check integrations
         run: |
           grep -q "lesson-sequencer.js" index.html
           grep -q "simulation-upgrades.js" index.html
           grep -q "interactive-lessons.js" index.html
+          grep -q "rutherford-experiment.js" index.html
+          grep -q "rutherford-experiment.css" index.html
           grep -q "Lesson sequencer" lesson-sequencer.js
           grep -q "Complete student lesson" interactive-lessons.js
           grep -q "Required practical 12" index.html
