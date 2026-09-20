@@ -134,9 +134,18 @@ function adaptiveNeeded(i){
 function injectAdaptive(){
  const root=$("#interactiveLessonWorkspace");if(!root)return;
  const old=$("#lpAdaptive",root);if(old)old.remove();
- const i=activeLesson();if(!adaptiveNeeded(i))return;
- const p=lessons()[i];if(!p)return;
+ const i=activeLesson(),p=lessons()[i];if(!p)return;
+ const perf=state.performance[`lesson-${i}`]||{wrong:0,correct:0,streak:0};
+ const strong=perf.streak>=3||perf.correct>=5;
+ if(!adaptiveNeeded(i)&&!strong)return;
  const box=document.createElement("article");box.id="lpAdaptive";box.className="lp-adaptive";
+ if(strong){
+   const hard=exams()?.[i]?.[1]||exams()?.[i]?.[0];
+   box.innerHTML=`<h4>A* extension unlocked</h4><p>Your recent answers are secure. Try a harder unfamiliar application before moving on.</p><div class="lp-question"><h4>${esc(hard?.q||"Explain this lesson using evidence, a model/equation and one limitation.")}</h4><textarea id="lpAstarUnlock" style="width:100%;min-height:90px;background:#061421;color:var(--text);border:1px solid var(--border);border-radius:9px;padding:9px"></textarea><div class="lp-actions"><button type="button" id="lpCheckAstar">Check reasoning</button></div><div id="lpAstarFb"></div></div>`;
+   root.querySelector(".il-body")?.prepend(box);
+   $("#lpCheckAstar",box).onclick=()=>{const ans=$("#lpAstarUnlock",box).value,pts=hard?.points||[];const hits=pts.map(x=>pointHit(ans,x));$("#lpAstarFb",box).innerHTML='<div class="lp-markpoints">'+pts.map((x,k)=>`<div class="lp-markpoint ${hits[k]?"hit":"miss"}">${hits[k]?"Likely covered":"Strengthen"} · ${esc(x)}</div>`).join("")+'</div>'};
+   return;
+ }
  box.innerHTML=`<h4>Adaptive reteach recommended</h4><p>You have had several attempts in this lesson. Rebuild the core model before continuing.</p><div class="lp-actions"><button type="button" id="lpReteach">Open short reteach</button><button type="button" id="lpExtraPractice">Extra practice</button></div><div id="lpAdaptiveBody"></div>`;
  root.querySelector(".il-body")?.prepend(box);
  $("#lpReteach",box).onclick=()=>{
@@ -148,7 +157,7 @@ function injectAdaptive(){
    $("#lpAdaptiveBody",box).innerHTML=`<div class="lp-question"><h4>${esc(q[0])}</h4><div class="lp-options">${q[1].map((o,j)=>`<button type="button" data-adapt="${j}">${esc(o)}</button>`).join("")}</div><div class="lp-feedback" id="lpAdaptFb">Choose an answer.</div></div>`;
    $$("[data-adapt]",box).forEach(b=>b.onclick=()=>{
      const ok=Number(b.dataset.adapt)===q[2];b.classList.add(ok?"correct":"wrong");$("#lpAdaptFb",box).textContent=(ok?"Correct — ":"Review — ")+q[3];
-     if(ok){const perf=state.performance[`lesson-${i}`]||{};perf.streak=3;state.performance[`lesson-${i}`]=perf;save();}
+     if(ok){const pp=state.performance[`lesson-${i}`]||{};pp.streak=3;state.performance[`lesson-${i}`]=pp;save();}
    });
  };
 }
@@ -280,6 +289,11 @@ observer.observe(document.body,{childList:true,subtree:true});
 setInterval(()=>{if($("#interactiveLessonWorkspace")){annotateConfidence();enhanceExamCards();}},1200);
 function init(){
  if(!C()){setTimeout(init,100);return}
+ const hash=location.hash.match(/assignment=([^&]+)/);
+ if(hash){
+   const d=decodeCode(decodeURIComponent(hash[1]));
+   if(d?.type==="nuclear-assignment-v1"&&Array.isArray(d.lessons)){state.assignments.student=d;save();history.replaceState(null,"",location.pathname+location.search)}
+ }
  buildPlatformView();annotateConfidence();enhanceExamCards();injectAdaptive();buildPracticalNotebook();
 }
 setTimeout(init,150);
@@ -397,10 +411,10 @@ function renderTeacher(){
  const avg=Math.round(lessons().reduce((a,_,i)=>a+lessonProgress(i),0)/Math.max(1,lessons().length));
  const weak=revisionItems().slice(0,5);
  host.innerHTML=`<div class="lp-grid"><article class="lp-card"><span class="eyebrow">Current learner/device</span><h3>Teacher dashboard</h3><div class="lp-metric-grid"><div class="lp-metric"><strong>${avg}%</strong><span>course completion</span></div><div class="lp-metric"><strong>${diagnosticScore().pct}%</strong><span>diagnostic</span></div><div class="lp-metric"><strong>${Object.keys(state.misconceptions).length}</strong><span>flagged areas</span></div><div class="lp-metric"><strong>${Object.values(state.synoptic).filter(x=>x.completed).length}</strong><span>A* tasks secure</span></div></div><h4 style="margin-top:12px">Priority areas</h4><div class="lp-chip-row">${weak.map(x=>`<span class="lp-chip weak">${esc(x.title)}</span>`).join("")||'<span class="muted">No priorities yet</span>'}</div><label class="lp-field"><span>Student name for export</span><input id="lpProgressName" value="Student"></label><div class="lp-actions"><button type="button" class="primary" id="lpMakeProgressCode">Generate progress code</button></div><label class="lp-field"><span>Progress code</span><textarea id="lpProgressCode" readonly></textarea></label></article>
- <article class="lp-card"><span class="eyebrow">Assignment mode</span><h3>Create an assignment</h3><label class="lp-field"><span>Assignment title</span><input id="lpAssignTitle" value="Nuclear Physics assignment"></label><label class="lp-field"><span>Due date</span><input type="date" id="lpAssignDue"></label><label class="lp-field"><span>Minimum lesson progress</span><select id="lpAssignMin"><option>60</option><option selected>80</option><option>100</option></select></label><div class="lp-list">${lessons().map((p,i)=>`<label class="lp-toggle"><span>${i+1}. ${esc(p.title)}</span><input type="checkbox" data-assign-lesson="${i}" ${i<3?"checked":""}></label>`).join("")}</div><div class="lp-actions"><button type="button" class="primary" id="lpBuildAssignment">Generate assignment code</button></div><label class="lp-field"><span>Assignment code</span><textarea id="lpAssignmentCode" readonly></textarea></label></article></div>
+ <article class="lp-card"><span class="eyebrow">Assignment mode</span><h3>Create an assignment</h3><label class="lp-field"><span>Assignment title</span><input id="lpAssignTitle" value="Nuclear Physics assignment"></label><label class="lp-field"><span>Due date</span><input type="date" id="lpAssignDue"></label><label class="lp-field"><span>Minimum lesson progress</span><select id="lpAssignMin"><option>60</option><option selected>80</option><option>100</option></select></label><div class="lp-list">${lessons().map((p,i)=>`<label class="lp-toggle"><span>${i+1}. ${esc(p.title)}</span><input type="checkbox" data-assign-lesson="${i}" ${i<3?"checked":""}></label>`).join("")}</div><div class="lp-actions"><button type="button" class="primary" id="lpBuildAssignment">Generate assignment code</button></div><label class="lp-field"><span>Assignment code</span><textarea id="lpAssignmentCode" readonly></textarea></label><label class="lp-field"><span>Direct assignment link</span><textarea id="lpAssignmentLink" readonly></textarea></label></article></div>
  <article class="lp-card" style="margin-top:12px"><div class="lp-hero"><div><h3>Class progress imports</h3><p>Students can send their progress code. Import several codes here to compare learners without requiring a server account.</p></div><span class="lp-chip">${state.teacherRecords.length} students</span></div><div class="lp-grid"><label class="lp-field"><span>Paste student progress code</span><textarea id="lpImportProgress"></textarea></label><div><div class="lp-actions"><button type="button" id="lpImportProgressBtn">Import student</button><button type="button" id="lpClearRecords">Clear imported class</button></div><div id="lpImportFb"></div></div></div><div class="lp-table-wrap"><table class="lp-table"><thead><tr><th>Student</th><th>Average</th><th>Diagnostic</th><th>Weakest lessons</th></tr></thead><tbody>${state.teacherRecords.map(r=>{const av=Math.round((r.lessons||[]).reduce((a,x)=>a+(x.progress||0),0)/Math.max(1,(r.lessons||[]).length));const ds=r.diagnostic?.answers||{};const dvals=Object.values(ds);const dp=dvals.length?Math.round(dvals.filter(x=>x.correct).length/dvals.length*100):0;const wl=(r.lessons||[]).slice().sort((a,b)=>a.progress-b.progress).slice(0,3).map(x=>x.title).join(", ");return `<tr><td>${esc(r.name)}</td><td>${av}%</td><td>${dp}%</td><td>${esc(wl)}</td></tr>`}).join("")}</tbody></table></div><h4 style="margin-top:14px">Class heatmap</h4><div class="lp-heat">${lessons().map((p,i)=>{const vals=state.teacherRecords.map(r=>r.lessons?.[i]?.progress).filter(v=>Number.isFinite(v));const av=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):lessonProgress(i);const cls=av>=80?"high":av>=50?"mid":"low";return `<button type="button" class="${cls}" title="${esc(p.title)}">${i+1}<br>${av}%</button>`}).join("")}</div></article>`;
  $("#lpMakeProgressCode",host).onclick=()=>{$("#lpProgressCode",host).value=encodeCode(progressPayload($("#lpProgressName",host).value||"Student"))};
- $("#lpBuildAssignment",host).onclick=()=>{const ls=$$("[data-assign-lesson]:checked",host).map(x=>Number(x.dataset.assignLesson));const a={type:"nuclear-assignment-v1",title:$("#lpAssignTitle",host).value.trim(),due:$("#lpAssignDue",host).value,minProgress:Number($("#lpAssignMin",host).value),lessons:ls,created:now()};state.assignments.teacher.push(a);save();$("#lpAssignmentCode",host).value=encodeCode(a)};
+ $("#lpBuildAssignment",host).onclick=()=>{const ls=$$("[data-assign-lesson]:checked",host).map(x=>Number(x.dataset.assignLesson));const a={type:"nuclear-assignment-v1",title:$("#lpAssignTitle",host).value.trim(),due:$("#lpAssignDue",host).value,minProgress:Number($("#lpAssignMin",host).value),lessons:ls,created:now()};state.assignments.teacher.push(a);save();const code=encodeCode(a);$("#lpAssignmentCode",host).value=code;$("#lpAssignmentLink",host).value=location.origin+location.pathname+"#assignment="+encodeURIComponent(code)};
  $("#lpImportProgressBtn",host).onclick=()=>{const d=decodeCode($("#lpImportProgress",host).value);if(!d||d.type!=="nuclear-progress-v1"){$("#lpImportFb",host).innerHTML='<div class="lp-feedback lp-bad">Invalid progress code.</div>';return}state.teacherRecords.push(d);save();renderTeacher()};
  $("#lpClearRecords",host).onclick=()=>{state.teacherRecords=[];save();renderTeacher()};
 }
