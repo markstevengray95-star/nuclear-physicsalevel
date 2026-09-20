@@ -3,9 +3,14 @@ import { chromium } from "playwright";
 const url = process.env.TEST_URL || "http://127.0.0.1:3000";
 const browser = await chromium.launch({headless:true});
 const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+await page.addInitScript(() => {
+  localStorage.setItem("aqaNuclearInteractiveV1", JSON.stringify({
+    0:{pages:{"0":true},practice:{},sim:{},reinforce:{vocab:{}},worked:1,short:false,exitBest:0,tab:"learn"}
+  }));
+});
 const errors=[];
 page.on("pageerror",e=>errors.push("PAGE: "+e.message));
-page.on("console",msg=>{ if(msg.type()==="error") errors.push("CONSOLE: "+msg.text()); });
+page.on("console",msg=>{ if(msg.type()==="error") errors.push("CONSOLE: "+msg.text()); });\npage.on("response",res=>{ if(res.status()>=400) errors.push("HTTP "+res.status()+" "+res.url()); });
 
 async function must(sel,label){
   await page.waitForSelector(sel,{state:"visible",timeout:10000});
