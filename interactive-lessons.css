@@ -19,3 +19,21 @@
 .il-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.il-badge{display:inline-flex;padding:3px 7px;border-radius:999px;border:1px solid var(--border);font-size:.67rem;font-weight:900;color:#cbeaff}
 .il-complete-banner{margin-top:10px;padding:12px;border:1px solid rgba(99,217,164,.45);border-radius:11px;background:rgba(99,217,164,.08)}.il-complete-banner strong{color:#9defbd}
 @media(max-width:800px){.il-lesson-intro,.il-simtask{grid-template-columns:1fr}.il-vocab{grid-template-columns:1fr}.il-head{display:block}.il-progress{margin-top:10px;min-width:0}}
+
+
+/* Reinforcement task stage */
+.il-reinforce-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.il-reinforce-head h4{margin:3px 0 4px;font-size:1.08rem}.il-reinforce-head p{margin:0;color:var(--muted);font-size:.84rem}
+.il-reinforce-card{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:10px}
+.il-task-number{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#12304a;border:1px solid #3c6f96;font-weight:950;color:#d8efff}
+.il-vocab-tasks{display:grid;gap:8px}.il-vocab-q{padding:10px;border:1px solid var(--border);border-radius:10px;background:#071522}
+.il-vocab-q>strong{display:block;margin-bottom:7px;color:#cdeaff}.il-mini-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.il-mini-options button{min-height:40px;text-align:left;border:1px solid var(--border);background:#0b1b2d;color:var(--text);border-radius:9px;padding:8px;cursor:pointer;font-size:.78rem}
+.il-mini-options button.correct{border-color:var(--good);background:rgba(99,217,164,.12)}.il-mini-options button.wrong{border-color:var(--bad);background:rgba(255,123,135,.10)}
+.il-sequence-pool{display:grid;gap:7px;margin:9px 0}.il-seq-chip{border:1px solid var(--border);background:#0b1b2d;color:var(--text);border-radius:10px;padding:9px 10px;text-align:left;cursor:pointer}
+.il-seq-chip:hover{border-color:#4c789d}.il-sequence-chosen{display:grid;gap:6px;padding:9px;border-radius:10px;background:#061421;border:1px dashed #35516c;min-height:48px}
+.il-seq-picked{display:grid;grid-template-columns:27px 1fr;gap:8px;align-items:start;padding:8px;border-radius:8px;background:#0b1b2b;border:1px solid #29425c;font-size:.81rem}
+.il-seq-picked span{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#173650;font-weight:900}
+.il-long-answer{width:100%;min-height:120px;resize:vertical;border:1px solid var(--border);background:#061421;color:var(--text);border-radius:10px;padding:10px;font:inherit}
+.il-keyword-strip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:.76rem}.il-keyword-strip span{padding:4px 7px;border-radius:999px;border:1px solid #35536e;background:#0a1c2d;color:#ccecff}
+@media(max-width:700px){.il-reinforce-head{display:block}.il-reinforce-head .il-badge{margin-top:8px}.il-reinforce-card{grid-template-columns:1fr}.il-task-number{width:32px;height:32px}.il-mini-options{grid-template-columns:1fr}}
