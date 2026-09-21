@@ -22,11 +22,11 @@ const profiles={
   answers:["It halves","It doubles","It becomes zero"],correct:0
  },
  "Animated decay chain":{
-  what:"A step-by-step U-238 natural decay series used to visualise how repeated alpha and beta-minus decays change the daughter nucleus until stable Pb-206 is reached.",
-  scale:"The timing is deliberately compressed and the drawn nuclei are schematic. Real half-lives in a natural decay series span enormously different timescales.",
-  key:"Alpha decay: A−4, Z−2, N−2. Beta-minus decay: A unchanged, Z+1, N−1. A decay chain continues because a daughter nucleus can itself be unstable.",
-  challenge:"Why can a decay chain contain many separate steps?",
-  answers:["A daughter nucleus can still be unstable","Every alpha particle decays again","Gamma radiation always creates a new element"],correct:0
+  what:"A step-by-step U-238 natural decay series showing both the nuclear event and the element identity change. Alpha decay visibly removes a 2-proton + 2-neutron cluster; beta-minus visibly converts a neutron to a proton while a beta electron leaves.",
+  scale:"The nuclear size, emitted particles and timing are enlarged/compressed for teaching. Real nuclei are far smaller and the natural-chain half-lives span enormously different timescales.",
+  key:"Element identity is fixed by proton number Z. Alpha decay removes two protons, so Z falls by 2 and the element changes. Beta-minus converts n → p, so Z rises by 1 and the element changes while A stays constant.",
+  challenge:"Why does beta-minus decay change the element even though A is unchanged?",
+  answers:["A neutron becomes a proton, so Z increases by 1","The nucleus loses four nucleons","The electron adds to A"],correct:0
  },
 "N–Z stability map":{
   what:"How decay processes change neutron number N and proton number Z.",
