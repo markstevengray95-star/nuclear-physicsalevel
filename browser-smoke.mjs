@@ -164,6 +164,20 @@ try{
   const fissionReadout=await page.locator("#simReadout").innerText();
   if(!/U-236|prompt neutrons|next generation/i.test(fissionReadout)) throw new Error("Detailed fission sequence did not update");
   console.log("PASS detailed fission sequence");
+  for (const simName of [
+    "Random decay and half-life",
+    "N–Z stability map",
+    "Nuclear radius and density",
+    "Mass defect and binding energy",
+    "Binding-energy curve",
+    "Neutron moderation by collisions"
+  ]) {
+    await page.locator(".sim-tab",{hasText:simName}).click();
+    await page.waitForTimeout(80);
+    const txt=await page.locator("#simReadout").innerText();
+    if(!txt.trim()) throw new Error("Empty simulation readout for "+simName);
+  }
+  console.log("PASS upgraded simulation suite");
 
   await must('.nav-button[data-view="rutherfordexp"]',"3D Rutherford nav");
   await page.click('.nav-button[data-view="rutherfordexp"]');
