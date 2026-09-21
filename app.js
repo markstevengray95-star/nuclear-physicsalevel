@@ -165,15 +165,16 @@ const sims = [
   },
   {
     id:"fission", code:"3.8.1.7", title:"Fission chain reaction",
-    subtitle:"Use a conceptual neutron-balance control to compare a decreasing, steady and increasing chain reaction.",
+    subtitle:"Step through neutron capture, the excited compound nucleus, deformation, splitting, prompt-neutron release and the next chain-reaction generation.",
     controls:[
-      {key:"k",label:"Effective neutron multiplication",type:"range",min:.6,max:1.4,step:.05,value:1.0,unit:""},
-      {key:"generation",label:"Generation",type:"range",min:0,max:6,step:1,value:3,unit:""}
+      {key:"eventStage",label:"Fission event stage",type:"range",min:0,max:5,step:1,value:0,unit:""},
+      {key:"k",label:"Conceptual chain behaviour",type:"range",min:.6,max:1.4,step:.05,value:1.0,unit:""},
+      {key:"generation",label:"Chain generations shown",type:"range",min:0,max:5,step:1,value:3,unit:""}
     ],
-    simple:"If each generation causes fewer fissions, the chain dies away; if it replaces itself, it stays steady; if it grows, the chain increases.",
-    exam:"A chain reaction depends on the balance between neutrons produced by fission and neutrons lost by escape or absorption without causing fission.",
-    mistake:"This model is conceptual; k is not determined by a single control or material property.",
-    check:{q:"For a steady chain reaction, the neutron population should be approximately…",opts:["falling each generation","constant each generation","doubling each generation"],a:1}
+    simple:"A slow neutron can be absorbed by a fissile U-235 nucleus, forming an excited U-236* compound nucleus. It deforms and splits into two neutron-rich fragments, releasing energy and typically several prompt neutrons that may trigger further fissions.",
+    exam:"For AQA, explain the sequence: neutron absorption → unstable/excited compound nucleus → fission fragments + released neutrons + energy. A chain reaction then depends on whether enough released neutrons cause later fissions rather than being lost by escape or non-fission absorption.",
+    mistake:"The exact fission fragments vary. The chain-behaviour control is deliberately conceptual and is not a real criticality or reactor-design calculation.",
+    check:{q:"What directly links one fission event to the next generation?",opts:["Prompt neutrons released by fission","Electrons leaving the atom","The coolant"],a:0}
   },
   {
     id:"reactor", code:"3.8.1.7–8", title:"Thermal reactor systems",
@@ -643,19 +644,168 @@ function renderBinding(ctx,w,h){
   readout("At A = "+A+", schematic average binding energy ≈ <strong>"+be.toFixed(2)+" MeV per nucleon</strong>.");
 }
 function renderFission(ctx,w,h,t){
-  const k=params.k,gen=params.generation;
-  const levels=Math.min(6,gen+1),cx=w*.50,top=h*.13;
-  for(let g=0;g<levels;g++){
-    const count=Math.min(18,Math.max(1,Math.round(Math.pow(k,g)*Math.pow(1.7,g))));
-    const yy=top+g*(h*.70/6);
-    for(let i=0;i<count;i++){
-      const spread=Math.min(w*.82,80+g*95),xx=cx+(i-(count-1)/2)*(spread/Math.max(1,count-1));
-      if(g>0){ctx.strokeStyle="rgba(126,232,255,.22)";ctx.beginPath();ctx.moveTo(cx,yy-h*.70/6+18);ctx.lineTo(xx,yy-12);ctx.stroke();}
-      circle(ctx,xx,yy,Math.max(5,13-g*.8),g===levels-1?"#ffe98a":"#72a9ff","rgba(255,255,255,.25)");
-    }
+  const k=params.k,gen=Math.round(params.generation),stage=Math.round(params.eventStage||0);
+  const cx=w*.43,cy=h*.31,R=Math.min(w,h)*.105;
+  const stageNames=[
+    "1 · incoming thermal neutron",
+    "2 · neutron capture: U-236* formed",
+    "3 · excited nucleus deforms",
+    "4 · scission: nucleus splits",
+    "5 · fragments accelerate + prompt neutrons released",
+    "6 · released neutrons can start the next generation"
+  ];
+
+  // Title / stage timeline
+  label(ctx,"INDUCED FISSION OF U-235 — CONCEPTUAL EVENT",w*.05,h*.075,"#d8ecff",13);
+  const tx=w*.05,ty=h*.105,tw=w*.88/6;
+  for(let n=0;n<6;n++){
+    ctx.fillStyle=n===stage?"rgba(103,199,255,.24)":"rgba(95,120,145,.10)";
+    ctx.strokeStyle=n===stage?"#67c7ff":"rgba(130,160,190,.28)";
+    ctx.lineWidth=n===stage?2:1;
+    ctx.beginPath();ctx.roundRect(tx+n*tw,ty,tw-5,24,6);ctx.fill();ctx.stroke();
+    label(ctx,String(n+1),tx+n*tw+(tw-5)/2,ty+16,n===stage?"#dff5ff":"#9db1c5",10,"center");
   }
-  const status=k<.95?"decreasing":k>1.05?"increasing":"approximately steady";
-  readout("Conceptual k = <strong>"+k.toFixed(2)+"</strong> → chain is <strong>"+status+"</strong>.<br>This is a teaching model of neutron balance, not a real reactor calculation.");
+  label(ctx,stageNames[stage],w*.49,ty+43,"#bfe8ff",12,"center");
+
+  // Helper: schematic nucleus / fragment
+  function nucleus(x,y,r,labelText,excited=false){
+    const g=ctx.createRadialGradient(x-r*.25,y-r*.25,3,x,y,r);
+    g.addColorStop(0,excited?"#ffe09b":"#dcecff");
+    g.addColorStop(.45,excited?"#d49352":"#7f9dbb");
+    g.addColorStop(1,"#25384c");
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=excited?"#ffd27a":"#a8c0d8";ctx.lineWidth=2;ctx.stroke();
+    for(let i=0;i<18;i++){
+      const a=i*2.399963,rr=r*.68*Math.sqrt((i+.4)/18);
+      circle(ctx,x+Math.cos(a)*rr,y+Math.sin(a)*rr,Math.max(2.5,r*.075),i%2?"#6ca5ef":"#ef7777");
+    }
+    label(ctx,labelText,x,y+r+20,"#d8e9f7",11,"center");
+  }
+  function deformed(x,y,r){
+    ctx.save();ctx.translate(x,y);
+    const pulse=1.0+0.04*Math.sin(t*4);
+    ctx.scale(1.42*pulse,.76/pulse);
+    const g=ctx.createRadialGradient(-r*.2,-r*.2,3,0,0,r);
+    g.addColorStop(0,"#ffe5a8");g.addColorStop(.5,"#c98a50");g.addColorStop(1,"#3b3040");
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,r,r,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#ffd18a";ctx.lineWidth=2;ctx.stroke();ctx.restore();
+    label(ctx,"deformed excited U-236*",x,y+r+26,"#ffd9a5",11,"center");
+  }
+  function fragment(x,y,r,text){
+    drawNucleus(ctx,x,y,r,8,11);
+    label(ctx,text,x,y+r+17,"#e6eff8",10,"center");
+  }
+  function neutron(x,y,labText){
+    circle(ctx,x,y,6,"#7ee8ff","#dffaff");
+    if(labText)label(ctx,labText,x,y-12,"#aeefff",9,"center");
+  }
+
+  // Single fission event
+  if(stage===0){
+    nucleus(cx,cy,R,"U-235");
+    const p=.12+.68*((t*.25)%1),nx=w*.06+(cx-R-w*.08)*p;
+    neutron(nx,cy,"slow neutron");
+    arrowLine(ctx,nx+10,cy,cx-R-5,cy,"rgba(126,232,255,.55)");
+    label(ctx,"neutron approaches a fissile nucleus",w*.19,cy+74,"#a8c4da",10,"center");
+  }else if(stage===1){
+    nucleus(cx,cy,R,"U-236*",true);
+    neutron(cx-R*.15,cy-R*.12);
+    ctx.strokeStyle="rgba(255,220,130,.65)";ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(cx,cy,R+14,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    label(ctx,"U-235 + n → excited compound nucleus U-236*",cx,cy-R-28,"#ffd99a",11,"center");
+    label(ctx,"absorbed neutron adds energy; the compound nucleus is unstable",cx,cy+R+42,"#a8c4da",10,"center");
+  }else if(stage===2){
+    deformed(cx,cy,R);
+    arrowLine(ctx,cx-R*.9,cy,cx-R*1.65,cy,"rgba(255,210,120,.45)");
+    arrowLine(ctx,cx+R*.9,cy,cx+R*1.65,cy,"rgba(255,210,120,.45)");
+    label(ctx,"nuclear shape oscillates / elongates",cx,cy-R-34,"#ffd99a",11,"center");
+    label(ctx,"repulsion between the two developing positive regions helps drive separation",cx,cy+R+48,"#a8c4da",10,"center");
+  }else if(stage===3){
+    const sep=R*.72;
+    fragment(cx-sep,cy,R*.58,"fission fragment");
+    fragment(cx+sep,cy,R*.52,"fission fragment");
+    ctx.strokeStyle="rgba(255,215,130,.75)";ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(cx,cy-R*.75);ctx.lineTo(cx,cy+R*.75);ctx.stroke();ctx.setLineDash([]);
+    label(ctx,"scission",cx,cy-R-22,"#ffe09b",11,"center");
+    arrowLine(ctx,cx-sep-R*.3,cy,cx-sep-R*.9,cy,"#ffb27a");
+    arrowLine(ctx,cx+sep+R*.3,cy,cx+sep+R*.9,cy,"#ffb27a");
+    label(ctx,"the exact fragment isotopes vary between fission events",cx,cy+R+52,"#a8c4da",10,"center");
+  }else{
+    const sep=R*1.15,move=Math.min(w*.10,(stage-3)*w*.035);
+    fragment(cx-sep-move,cy,R*.48,"neutron-rich fragment");
+    fragment(cx+sep+move,cy,R*.44,"neutron-rich fragment");
+    const dirs=[[-1.0,-.75],[.10,-1.0],[1.0,.70]];
+    dirs.forEach((d,n)=>{
+      const dist=stage===4?R*(1.0+((t*.35+n*.21)%1)*1.35):R*2.05;
+      const x=cx+d[0]*dist,y=cy+d[1]*dist;
+      neutron(x,y,n===0?"prompt n":"");
+      ctx.strokeStyle="rgba(126,232,255,.38)";ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();
+    });
+    arrowLine(ctx,cx-sep,cy,cx-sep-move-R*.55,cy,"#ffae72");
+    arrowLine(ctx,cx+sep,cy,cx+sep+move+R*.55,cy,"#ffae72");
+    label(ctx,"most released energy initially appears as kinetic energy of the fragments",cx,cy+R+54,"#ffd5a5",10,"center");
+    label(ctx,"typically several prompt neutrons are released",cx,cy-R-44,"#aeefff",10,"center");
+  }
+
+  // Energy / process panel at right
+  const px=w*.72,py=h*.18,pw=w*.24;
+  ctx.fillStyle="rgba(6,20,33,.82)";ctx.strokeStyle="#35536e";ctx.lineWidth=1;
+  ctx.beginPath();ctx.roundRect(px,py,pw,h*.36,12);ctx.fill();ctx.stroke();
+  label(ctx,"WHAT IS HAPPENING",px+12,py+22,"#d8efff",10);
+  const lines=[
+    "U-235 absorbs a neutron",
+    "→ excited U-236*",
+    "→ nucleus deforms",
+    "→ splits into 2 fragments",
+    "→ prompt neutrons + energy",
+    "→ neutrons may trigger later fissions"
+  ];
+  lines.forEach((x,n)=>{
+    ctx.fillStyle=n<=stage?"#cfeaff":"#6f8498";ctx.font=(n===stage?"800 ":"600 ")+"10px system-ui";ctx.textAlign="left";ctx.fillText(x,px+12,py+46+n*24);
+  });
+  ctx.fillStyle="#071421";ctx.fillRect(px+12,py+h*.245,pw-24,42);
+  label(ctx,"example bookkeeping",px+20,py+h*.265,"#99b7cf",9);
+  label(ctx,"n + U-235 → U-236* →",px+20,py+h*.285,"#d5eafa",9);
+  label(ctx,"fragments + 2–3 n + energy",px+20,py+h*.303,"#d5eafa",9);
+
+  // Chain-reaction panel
+  const chainTop=h*.64,chainBottom=h*.91,left=w*.07,right=w*.93;
+  ctx.strokeStyle="rgba(90,125,155,.35)";ctx.beginPath();ctx.moveTo(left,chainTop-18);ctx.lineTo(right,chainTop-18);ctx.stroke();
+  label(ctx,"HOW ONE FISSION CAN LINK TO THE NEXT GENERATION",left,chainTop-28,"#d8efff",11);
+
+  const levels=Math.min(5,gen+1);
+  const rows=[];
+  for(let g=0;g<levels;g++){
+    const raw=Math.pow(Math.max(.55,k),g)*Math.pow(1.45,g);
+    const count=Math.max(1,Math.min(9,Math.round(raw)));
+    const yy=chainTop+g*((chainBottom-chainTop)/Math.max(1,levels));
+    const xs=[];
+    for(let n=0;n<count;n++) xs.push(count===1?w*.5:left+(right-left)*(n+.5)/count);
+    rows.push({yy,xs});
+  }
+  rows.forEach((row,g)=>{
+    row.xs.forEach((x,n)=>{
+      if(g>0){
+        const prev=rows[g-1],parent=prev.xs[Math.min(prev.xs.length-1,Math.floor(n*prev.xs.length/row.xs.length))];
+        ctx.strokeStyle="rgba(126,232,255,.24)";ctx.beginPath();ctx.moveTo(parent,prev.yy+7);ctx.lineTo(x,row.yy-7);ctx.stroke();
+      }
+      circle(ctx,x,row.yy,7,g===levels-1?"#ffe08a":"#7eaef0","rgba(255,255,255,.25)");
+    });
+    label(ctx,"generation "+g,left-8,row.yy+4,"#9db4c9",9,"right");
+  });
+
+  // conceptual neutron losses
+  const status=k<.95?"decreasing chain":k>1.05?"increasing chain":"approximately steady chain";
+  const lossText=k<.95?"more released neutrons are lost than successfully continue the chain":k>1.05?"more released neutrons successfully cause later fissions than are lost":"useful neutron production approximately balances losses";
+  const ly=chainBottom+12;
+  ctx.strokeStyle="rgba(255,145,145,.55)";ctx.setLineDash([5,4]);
+  arrowLine(ctx,w*.20,chainTop+8,w*.10,chainTop+32,"rgba(255,145,145,.65)");
+  arrowLine(ctx,w*.80,chainTop+8,w*.90,chainTop+32,"rgba(255,145,145,.65)");
+  ctx.setLineDash([]);
+  label(ctx,"neutron lost by escape / non-fission absorption",w*.5,ly,"#e8b2b2",9,"center");
+
+  readout("<strong>"+stageNames[stage]+"</strong><br>"+
+    "Example sequence: n + U-235 → U-236* → two neutron-rich fragments + prompt neutrons + energy. The exact fragments vary. "+
+    "Most fission energy initially becomes kinetic energy of the fragments and is later transferred as thermal energy by collisions.<br>"+
+    "Chain view: <strong>"+status+"</strong> because "+lossText+". This is a qualitative AQA teaching model, not a real criticality calculation.");
 }
 function renderReactor(ctx,w,h,t){
   const control=params.control,cooling=params.cooling;
