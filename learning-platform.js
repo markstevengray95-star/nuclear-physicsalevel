@@ -165,10 +165,50 @@ function injectAdaptive(){
  };
 }
 const STOP=new Set("the a an and or to of in on for with from is are was were be been being this that it as by at into than then if using use used".split(" "));
-function keywords(s){return [...new Set(String(s).toLowerCase().replace(/[^a-z0-9λ²⁻+]/g," ").split(/\s+/).filter(x=>x.length>3&&!STOP.has(x)))];}
+function normalisePhysicsText(v){
+ return String(v??"")
+  .replace(/×/g,"x").replace(/[−–—]/g,"-")
+  .replace(/λ/g," lambda ").replace(/Δ/g," delta ")
+  .replace(/½/g,"1/2").replace(/²/g,"^2").replace(/³/g,"^3")
+  .toLowerCase().replace(/,/g,"").replace(/\s+/g," ").trim();
+}
+function keywords(v){
+ const expanded=normalisePhysicsText(v)
+  .replace(/\bdecay constant\b/g," lambda decay constant ")
+  .replace(/\bhalf[- ]life\b/g," half life ")
+  .replace(/\bbecquerels?\b/g," bq becquerel ")
+  .replace(/\bavogadro(?:'s)?(?: constant)?\b/g," avogadro na ");
+ return [...new Set(expanded.replace(/[^a-z0-9^+\-/.]/g," ").split(/\s+/).filter(x=>x.length>2&&!STOP.has(x)))];
+}
+function extractNumbers(v){
+ const text=normalisePhysicsText(v).replace(/(\d+(?:\.\d+)?)\s*x\s*10\s*\^?\s*([+\-]?\d+)/g,(_,a,b)=>String(Number(a)*Math.pow(10,Number(b))));
+ return [...text.matchAll(/[+\-]?(?:\d+\.?\d*|\.\d+)(?:e[+\-]?\d+)?/g)].map(m=>Number(m[0])).filter(Number.isFinite);
+}
+function numericEvidence(answer,point){
+ const need=extractNumbers(point),have=extractNumbers(answer);if(!need.length)return false;
+ return need.some(n=>have.some(a=>Math.abs(a-n)<=Math.max(Math.abs(n)*.02,1e-9)));
+}
 function pointHit(answer,point){
- const a=String(answer).toLowerCase(),ks=keywords(point);if(!ks.length)return false;
- return ks.filter(k=>a.includes(k)).length>=Math.max(1,Math.ceil(ks.length*.35));
+ const a=normalisePhysicsText(answer),ks=keywords(point);if(!a.trim())return false;
+ const wordHits=ks.filter(k=>a.includes(k));
+ const numeric=numericEvidence(a,point);
+ const threshold=Math.max(1,Math.ceil(ks.length*.38));
+ if(!ks.length)return numeric;
+ if(numeric&&wordHits.length>=Math.max(1,threshold-1))return true;
+ return wordHits.length>=threshold;
+}
+function autoMarkQuestion(q){
+ const answer=String(q.answer||"").trim();
+ const hits=(q.points||[]).map(p=>pointHit(answer,p));
+ const score=Math.min(Number(q.marks)||hits.length,hits.filter(Boolean).length);
+ const max=Number(q.marks)||hits.length;
+ return {hits,score,max,pct:max?Math.round(score/max*100):0};
+}
+function paperTotals(paper){
+ const marked=paper.filter(q=>Array.isArray(q.hits));
+ const score=marked.reduce((a,q)=>a+(Number(q.autoScore)||0),0);
+ const max=paper.reduce((a,q)=>a+(Number(q.marks)||0),0);
+ return {marked:marked.length,total:paper.length,score,max,pct:max?Math.round(score/max*100):0};
 }
 function commandCoach(q){
  const first=(String(q).trim().match(/^([A-Za-z]+)/)||[])[1]?.toLowerCase()||"";
@@ -442,12 +482,37 @@ function newPaper(count){
  const pool=examFlat().slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
  state.paper.current=pool.slice(0,Math.min(count,pool.length)).map(q=>({...q,answer:"",revealed:false}));state.paper.created=now();save();
 }
+function markPaperQuestion(i){
+ const q=state.paper.current?.[i];if(!q)return;
+ const result=autoMarkQuestion(q);
+ q.hits=result.hits;q.autoScore=result.score;q.autoPct=result.pct;q.revealed=true;q.markedAt=now();save();
+}
+function markWholePaper(){
+ const paper=state.paper.current||[];
+ paper.forEach((q,i)=>markPaperQuestion(i));
+ state.paper.history=state.paper.history||[];
+ const totals=paperTotals(paper);
+ state.paper.history.unshift({at:now(),score:totals.score,max:totals.max,pct:totals.pct,count:paper.length});
+ state.paper.history=state.paper.history.slice(0,20);save();
+}
+function paperResultHTML(q){
+ if(!Array.isArray(q.hits))return "";
+ const score=Number(q.autoScore)||0,max=Number(q.marks)||0;
+ const missing=q.hits.filter(x=>!x).length;
+ return '<div class="lp-auto-score"><strong>'+score+' / '+max+' marks</strong><span>'+Math.round(max?score/max*100:0)+'%</span></div>'+
+ '<div class="lp-markpoints">'+q.points.map((p,k)=>'<div class="lp-markpoint '+(q.hits[k]?"hit":"miss")+'"><strong>'+(q.hits[k]?"Mark likely awarded":"Missing / unclear")+'</strong> · '+esc(p)+'</div>').join("")+'</div>'+
+ '<div class="lp-feedback '+(score===max?"lp-good":score>=Math.ceil(max*.6)?"lp-warn":"lp-bad")+'"><strong>'+(score===max?"Full-mark response":score>=Math.ceil(max*.6)?"Mostly secure":"Needs development")+'</strong><p>'+(missing?'Add the missing physics ideas above, then re-mark the answer.':'All listed mark points were detected in the response.')+'</p></div>';
+}
 function renderPaper(){
- const host=$("#lp-paper");if(!host)return;const paper=state.paper.current||[];
- host.innerHTML=`<div class="lp-hero"><div><h3>Personalised mini-paper</h3><p>Generate a mixed paper from the course's original AQA-style question bank. Written answers stay saved on this device.</p></div><div class="lp-actions"><select id="lpPaperCount"><option>5</option><option selected>8</option><option>10</option><option>12</option></select><button type="button" class="primary" id="lpGeneratePaper">Generate paper</button></div></div>${paper.length?`<article class="lp-card"><div class="lp-stat"><strong>${paper.reduce((a,q)=>a+q.marks,0)}</strong><span>total marks</span></div>${paper.map((q,i)=>`<div class="lp-paper-q"><span class="lp-chip">${esc(q.title)} · ${q.marks} marks</span><h4>${i+1}. ${esc(q.q)}</h4><div class="lp-coach"><strong>Command-word coach</strong><span>${esc(commandCoach(q.q))}</span></div><textarea data-paper-answer="${i}" placeholder="Write your answer">${esc(q.answer||"")}</textarea><div class="lp-actions"><button type="button" data-paper-mark="${i}">Self-mark</button></div><div data-paper-result="${i}"></div></div>`).join("")}</article>`:'<article class="lp-card"><p class="muted">Generate a paper to begin.</p></article>'}`;
+ const host=$("#lp-paper");if(!host)return;const paper=state.paper.current||[],tot=paperTotals(paper);
+ host.innerHTML='<div class="lp-hero"><div><h3>Personalised mini-paper</h3><p>Generate a mixed paper from the course\'s original AQA-style question bank. Answers are auto-marked against transparent lesson mark points.</p></div><div class="lp-actions"><select id="lpPaperCount"><option>5</option><option selected>8</option><option>10</option><option>12</option></select><button type="button" class="primary" id="lpGeneratePaper">Generate paper</button></div></div>'+
+ (paper.length?'<article class="lp-card"><div class="lp-paper-summary"><div><strong>'+tot.max+'</strong><span>available marks</span></div><div><strong>'+(tot.marked?tot.score:"—")+'</strong><span>auto-mark score</span></div><div><strong>'+(tot.marked?tot.pct+"%":"—")+'</strong><span>percentage</span></div><div><strong>'+tot.marked+'/'+tot.total+'</strong><span>questions marked</span></div></div><div class="lp-actions"><button type="button" class="primary" id="lpAutoMarkPaper">Auto-mark entire paper</button><button type="button" id="lpClearPaperMarks">Clear marks</button></div><div class="lp-feedback lp-warn"><strong>Practice marking estimate</strong><p>The marker checks the answer against the displayed physics mark points, including key terminology and numerical evidence. Extended prose can still need teacher/examiner judgement.</p></div>'+
+ paper.map((q,i)=>'<div class="lp-paper-q"><span class="lp-chip">'+esc(q.title)+' · '+q.marks+' marks</span><h4>'+(i+1)+'. '+esc(q.q)+'</h4><div class="lp-coach"><strong>Command-word coach</strong><span>'+esc(commandCoach(q.q))+'</span></div><textarea data-paper-answer="'+i+'" placeholder="Write your answer">'+esc(q.answer||"")+'</textarea><div class="lp-actions"><button type="button" data-paper-mark="'+i+'">'+(Array.isArray(q.hits)?"Re-mark answer":"Auto-mark answer")+'</button></div><div data-paper-result="'+i+'">'+paperResultHTML(q)+'</div></div>').join("")+'</article>':'<article class="lp-card"><p class="muted">Generate a paper to begin.</p></article>');
  $("#lpGeneratePaper",host).onclick=()=>{newPaper(Number($("#lpPaperCount",host).value));renderPaper()};
- $$("[data-paper-answer]",host).forEach(t=>t.oninput=()=>{state.paper.current[Number(t.dataset.paperAnswer)].answer=t.value;save()});
- $$("[data-paper-mark]",host).forEach(b=>b.onclick=()=>{const i=Number(b.dataset.paperMark),q=state.paper.current[i],hits=q.points.map(p=>pointHit(q.answer,p));q.hits=hits;q.revealed=true;save();$('[data-paper-result="'+i+'"]',host).innerHTML='<div class="lp-markpoints">'+q.points.map((p,k)=>`<div class="lp-markpoint ${hits[k]?"hit":"miss"}">${hits[k]?"Likely covered":"Check"} · ${esc(p)}</div>`).join("")+'</div>'});
+ $$("[data-paper-answer]",host).forEach(t=>t.oninput=()=>{const q=state.paper.current[Number(t.dataset.paperAnswer)];q.answer=t.value;delete q.hits;delete q.autoScore;delete q.autoPct;save()});
+ $$("[data-paper-mark]",host).forEach(b=>b.onclick=()=>{markPaperQuestion(Number(b.dataset.paperMark));renderPaper()});
+ const all=$("#lpAutoMarkPaper",host);if(all)all.onclick=()=>{markWholePaper();renderPaper()};
+ const clear=$("#lpClearPaperMarks",host);if(clear)clear.onclick=()=>{paper.forEach(q=>{delete q.hits;delete q.autoScore;delete q.autoPct;delete q.markedAt});save();renderPaper()};
 }
 
 /* Feature: progress reports */
