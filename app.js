@@ -193,6 +193,7 @@ const sims = [
     id:"reactor", code:"3.8.1.7–8", title:"Thermal reactor systems",
     subtitle:"See the distinct roles of moderator, control system, coolant, shielding and shutdown.",
     controls:[
+      {key:"reactorFocus",label:"Teaching view",type:"select",value:"overview",options:[["overview","Overview"],["neutrons","Neutron pathway"],["heat","Heat pathway"],["safety","Safety systems"]]},
       {key:"control",label:"Control insertion (conceptual)",type:"range",min:0,max:100,step:1,value:50,unit:" %"},
       {key:"cooling",label:"Cooling effectiveness (conceptual)",type:"range",min:20,max:100,step:1,value:75,unit:" %"}
     ],
@@ -1181,170 +1182,252 @@ function renderFission(ctx,w,h,t){
     "Chain view: <strong>"+status+"</strong> because "+lossText+". This is a qualitative AQA teaching model, not a real criticality calculation.");
 }
 function renderReactor(ctx,w,h,t){
-  const control=params.control,cooling=params.cooling;
-  const vesselX=w*.12,vesselY=h*.16,vesselW=w*.42,vesselH=h*.62;
+  const control=params.control,cooling=params.cooling,focus=params.reactorFocus||"overview";
+  const vesselX=w*.10,vesselY=h*.16,vesselW=w*.43,vesselH=h*.62;
 
-  // containment/shielding shell
-  ctx.fillStyle="rgba(255,233,138,.08)";ctx.strokeStyle="rgba(255,233,138,.38)";ctx.lineWidth=14;
+  // Shielding and vessel.
+  ctx.fillStyle="rgba(255,233,138,.06)";ctx.strokeStyle=focus==="safety"?"rgba(255,233,138,.78)":"rgba(255,233,138,.32)";ctx.lineWidth=14;
   ctx.beginPath();ctx.roundRect(vesselX-16,vesselY-16,vesselW+32,vesselH+32,28);ctx.fill();ctx.stroke();ctx.lineWidth=2;
-  label(ctx,"biological shielding",vesselX+vesselW/2,vesselY+vesselH+38,"#ffe98a",11,"center");
+  label(ctx,"biological shielding",vesselX+vesselW/2,vesselY+vesselH+38,focus==="safety"?"#fff0a6":"#c3b780",10,"center");
 
-  // reactor vessel
   const vg=ctx.createLinearGradient(vesselX,0,vesselX+vesselW,0);
   vg.addColorStop(0,"#53687a");vg.addColorStop(.45,"#a8bac9");vg.addColorStop(.55,"#71879a");vg.addColorStop(1,"#43596d");
   ctx.fillStyle=vg;ctx.beginPath();ctx.roundRect(vesselX,vesselY,vesselW,vesselH,24);ctx.fill();ctx.strokeStyle="#b9c8d4";ctx.stroke();
-  label(ctx,"reactor vessel",vesselX+vesselW/2,vesselY-28,"#d6e7f4",12,"center");
+  label(ctx,"reactor vessel",vesselX+vesselW/2,vesselY-28,"#d6e7f4",11,"center");
 
-  // moderator/coolant region
-  ctx.fillStyle="rgba(70,150,205,.20)";ctx.fillRect(vesselX+24,vesselY+42,vesselW-48,vesselH-74);
-  label(ctx,"moderator region",vesselX+vesselW-32,vesselY+62,"#a8dcff",9,"right");
+  // Moderator region.
+  ctx.fillStyle=focus==="neutrons"?"rgba(70,170,235,.34)":"rgba(70,150,205,.18)";
+  ctx.fillRect(vesselX+24,vesselY+42,vesselW-48,vesselH-74);
+  label(ctx,"moderator slows neutrons",vesselX+vesselW-31,vesselY+63,focus==="neutrons"?"#bfeaff":"#8cb7d2",8,"right");
 
-  // fuel assemblies and control rods
+  // Fuel and rods.
   for(let i=0;i<6;i++){
     const x=vesselX+46+i*(vesselW-92)/5;
     const fuel=ctx.createLinearGradient(x-6,0,x+6,0);fuel.addColorStop(0,"#8b6a2c");fuel.addColorStop(.5,"#e7b866");fuel.addColorStop(1,"#6e4f1e");
     ctx.fillStyle=fuel;ctx.fillRect(x-6,vesselY+92,12,vesselH-130);
     const rodH=(vesselH-108)*(control/100);
-    ctx.fillStyle="#313d49";ctx.fillRect(x-9,vesselY+45,18,rodH);
+    ctx.fillStyle=focus==="neutrons"?"#1f2c37":"#313d49";ctx.fillRect(x-9,vesselY+45,18,rodH);
   }
-  label(ctx,"fuel",vesselX+42,vesselY+vesselH-30,"#ffd493",10);
-  label(ctx,"control rods",vesselX+vesselW/2,vesselY+36,"#d4dde4",10,"center");
+  label(ctx,"fuel: fission releases energy + neutrons",vesselX+30,vesselY+vesselH-26,"#ffd493",8);
+  label(ctx,"control rods absorb neutrons",vesselX+vesselW/2,vesselY+34,focus==="neutrons"?"#ffffff":"#bcc9d3",8,"center");
 
-  // neutrons
-  for(let i=0;i<20;i++){
-    const p=(t*.10+i/20)%1;
-    const x=vesselX+35+p*(vesselW-70),y=vesselY+110+(i%5)*(vesselH-180)/4;
-    circle(ctx,x,y,3,"#7ee8ff");
+  // Neutron pathway: fast -> collisions -> slower.
+  for(let i=0;i<18;i++){
+    const p=(t*.09+i/18)%1,x=vesselX+34+p*(vesselW-68),y=vesselY+112+(i%5)*(vesselH-185)/4;
+    const slow=p>.52;
+    circle(ctx,x,y,slow?3:4,slow?"#7ee8ff":"#ffe98a");
+    if(focus==="neutrons"&&i%4===0){
+      ctx.strokeStyle="rgba(126,232,255,.30)";ctx.beginPath();ctx.moveTo(x-18,y-8);ctx.lineTo(x,y);ctx.stroke();
+    }
   }
 
-  // primary coolant loop and heat exchanger
-  const loopX=w*.68,loopTop=h*.28,loopBottom=h*.68;
-  ctx.strokeStyle="#5dcfff";ctx.lineWidth=13;ctx.beginPath();
+  // Heat flow / coolant loop.
+  const loopX=w*.68,loopTop=h*.27,loopBottom=h*.68;
+  ctx.strokeStyle=focus==="heat"?"#7ce4ff":"#4fa8cf";ctx.lineWidth=focus==="heat"?16:11;ctx.beginPath();
   ctx.moveTo(vesselX+vesselW,vesselY+vesselH*.34);
   ctx.bezierCurveTo(loopX-50,loopTop,loopX-20,loopTop,loopX,loopTop);
   ctx.lineTo(loopX,loopBottom);
   ctx.bezierCurveTo(loopX-20,loopBottom,loopX-50,loopBottom,vesselX+vesselW,vesselY+vesselH*.72);ctx.stroke();ctx.lineWidth=2;
   ctx.fillStyle="#586c7e";ctx.beginPath();ctx.roundRect(loopX-28,h*.38,56,h*.20,12);ctx.fill();
-  label(ctx,"heat exchanger",loopX,h*.36,"#cfe8ff",10,"center");
-  label(ctx,"coolant transfers heat",loopX+55,h*.50,"#9fddff",10);
+  label(ctx,"heat exchanger",loopX,h*.36,"#cfe8ff",9,"center");
+  arrowLine(ctx,loopX+34,h*.48,w*.91,h*.48,focus==="heat"?"#ffb06f":"rgba(255,176,111,.55)");
+  label(ctx,"thermal energy transferred away",w*.91,h*.44,focus==="heat"?"#ffd0a0":"#c09672",9,"right");
 
-  // heat flow arrow to generator side (conceptual)
-  arrowLine(ctx,loopX+34,h*.48,w*.90,h*.48,"rgba(255,180,95,.8)");
-  label(ctx,"useful thermal energy",w*.89,h*.44,"#ffd5a5",10,"right");
+  // Teaching panel: distinct functions.
+  const px=w*.76,py=h*.18,pw=w*.20;
+  ctx.fillStyle="rgba(6,20,33,.86)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(px,py,pw,h*.50,10);ctx.fill();ctx.stroke();
+  const rows=[
+    ["fuel","fission source"],
+    ["moderator","slows neutrons"],
+    ["control rods","absorb neutrons"],
+    ["coolant","moves thermal energy"],
+    ["shielding","reduces external radiation"]
+  ];
+  label(ctx,"SYSTEM FUNCTIONS",px+10,py+19,"#d8efff",9);
+  rows.forEach((r,n)=>{
+    const active=focus==="overview"||(focus==="neutrons"&&n<=2)||(focus==="heat"&&n===3)||(focus==="safety"&&n===4);
+    label(ctx,r[0],px+10,py+48+n*43,active?"#ffffff":"#72879a",9);
+    label(ctx,r[1],px+10,py+64+n*43,active?"#aeefff":"#637687",8);
+  });
 
-  const neutronFactor=1-control/125,power=clamp(100*neutronFactor,0,100),thermal=power*(1-cooling/120);
-  readout("Conceptual neutron population indicator: <strong>"+power.toFixed(0)+"%</strong> · heat-removal load: "+thermal.toFixed(0)+"%.<br>Moderator slows neutrons · control rods absorb neutrons · coolant transfers heat · shielding reduces radiation outside the core.");
+  const neutronIndicator=clamp(100*(1-control/125),0,100),heatRemoval=clamp(cooling,0,100);
+  readout(
+    "<strong>"+(focus==="overview"?"Overview":focus==="neutrons"?"Neutron pathway":focus==="heat"?"Heat-transfer pathway":"Safety view")+"</strong><br>"+
+    "Moderator slows neutrons; control rods absorb neutrons; coolant transfers thermal energy; shielding reduces radiation outside the core. The conceptual controls illustrate these separate roles only and are <strong>not</strong> a real reactor operating model.<br>"+
+    "Teaching indicators: neutron-population index "+neutronIndicator.toFixed(0)+"%, heat-removal index "+heatRemoval.toFixed(0)+"%."
+  );
 }
 function renderEnergyLevels(ctx,w,h,t){
   const levels=[0,0.14,0.39,0.82,1.42];
-  let up=Math.round(params.upperLevel), low=Math.round(params.lowerLevel);
-  if(low>=up) low=Math.max(0,up-1);
-  const left=w*.18,right=w*.76,base=h*.79,scale=h*.43/1.5;
+  let up=Math.round(params.upperLevel),low=Math.round(params.lowerLevel);
+  if(low>=up)low=Math.max(0,up-1);
+  const dE=Math.max(0,levels[up]-levels[low]);
+  const hPlanck=6.62607015e-34,c=299792458,Ej=dE*1e6*e,freq=Ej/hPlanck,wavelength=freq>0?c/freq:0;
+
+  // Two nuclei: before and after gamma emission.
+  const nx1=w*.15,nx2=w*.39,ny=h*.33,nr=Math.min(w,h)*.085;
+  drawNucleus(ctx,nx1,ny,nr,10,12);drawNucleus(ctx,nx2,ny,nr,10,12);
+  ctx.strokeStyle="rgba(255,228,125,.75)";ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(nx1,ny,nr+10,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  label(ctx,"excited nucleus",nx1,ny+nr+24,"#ffe7a2",11,"center");
+  label(ctx,"lower-energy nucleus",nx2,ny+nr+24,"#a9e8c4",11,"center");
+  label(ctx,"same A and Z",nx2,ny+nr+42,"#9db7ca",9,"center");
+
+  // Animated photon leaves the nucleus.
+  const ph=(t*.45)%1,px=nx1+nr+ph*(nx2-nx1-nr*1.2),py=ny-nr*.9;
+  ctx.strokeStyle="#ffe98a";ctx.lineWidth=2.5;ctx.beginPath();
+  for(let i=0;i<28;i++){
+    const xx=px-35+i*3,yy=py+Math.sin(i*1.35+t*5)*6;
+    if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);
+  }
+  ctx.stroke();label(ctx,"γ photon",px,py-14,"#ffe98a",9,"center");
+  arrowLine(ctx,nx1+nr*.7,ny-nr*.55,nx2-nr*.7,ny-nr*.55,"rgba(255,233,138,.38)");
+
+  // Energy-level diagram.
+  const left=w*.57,right=w*.86,base=h*.77,scale=h*.40/1.5;
   levels.forEach((E,i)=>{
     const y=base-E*scale;
-    ctx.strokeStyle=i===up?"#ffe98a":i===low?"#67c7ff":"rgba(190,215,240,.45)";
-    ctx.lineWidth=(i===up||i===low)?3:1.5;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
-    label(ctx,"E"+i+"  "+E.toFixed(2)+" MeV",right+12,y+4,"#cfe8ff",11);
+    ctx.strokeStyle=i===up?"#ffe98a":i===low?"#67c7ff":"rgba(190,215,240,.34)";
+    ctx.lineWidth=(i===up||i===low)?3:1.3;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
+    label(ctx,"E"+i+"  "+E.toFixed(2)+" MeV",right+9,y+4,"#cfe8ff",9);
   });
-  const y1=base-levels[up]*scale,y2=base-levels[low]*scale,x=w*.46;
-  arrowLine(ctx,x,y1+8,x,y2-8,"#ffe98a");
-  const dE=Math.max(0,levels[up]-levels[low]);
-  const ph=(t*.55)%1, gx=x+(w*.30)*ph, gy=y1+(y2-y1)*ph;
-  ctx.strokeStyle="#ffe98a";ctx.lineWidth=2;ctx.beginPath();
-  for(let i=0;i<18;i++){const xx=gx-35+i*4,yy=gy+Math.sin(i*1.6)*6;if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);}ctx.stroke();
-  readout("ΔE = <strong>"+dE.toFixed(2)+" MeV</strong> · A and Z unchanged during gamma emission.");
+  const y1=base-levels[up]*scale,y2=base-levels[low]*scale,x=w*.70;
+  arrowLine(ctx,x,y1+5,x,y2-5,"#ffe98a");
+  label(ctx,"ΔE = "+dE.toFixed(2)+" MeV",x+10,(y1+y2)/2,"#ffe98a",9);
+
+  // Quantitative panel.
+  const bx=w*.08,by=h*.66,bw=w*.40;
+  ctx.fillStyle="rgba(7,22,35,.86)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(bx,by,bw,h*.20,10);ctx.fill();ctx.stroke();
+  label(ctx,"PHOTON CALCULATION",bx+10,by+18,"#d6ecff",9);
+  label(ctx,"ΔE = hf",bx+10,by+44,"#ffffff",11);
+  label(ctx,"f ≈ "+freq.toExponential(2)+" Hz",bx+10,by+68,"#aeefff",10);
+  label(ctx,"λ ≈ "+wavelength.toExponential(2)+" m",bx+10,by+90,"#aeefff",10);
+
+  readout(
+    "Nuclear transition: <strong>"+levels[up].toFixed(2)+" MeV → "+levels[low].toFixed(2)+" MeV</strong>, so ΔE = <strong>"+dE.toFixed(2)+" MeV</strong>.<br>"+
+    "The gamma photon carries E = hf, giving f ≈ <strong>"+freq.toExponential(3)+" Hz</strong> and wavelength ≈ <strong>"+wavelength.toExponential(3)+" m</strong>. A and Z are unchanged because no nucleons are added or removed."
+  );
 }
 function arrowLine(ctx,x1,y1,x2,y2,color){
   ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
   const a=Math.atan2(y2-y1,x2-x1),q=8;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-Math.cos(a-.55)*q,y2-Math.sin(a-.55)*q);ctx.lineTo(x2-Math.cos(a+.55)*q,y2-Math.sin(a+.55)*q);ctx.closePath();ctx.fill();
 }
 function renderClosestApproach(ctx,w,h,t){
-  const Z=params.targetZ,E=params.alphaMeV;
-  const k=8.9875517923e9, Ej=E*1e6*e, r=k*(2*Z*e*e)/Ej, rfm=r/1e-15;
-  const nx=w*.69,ny=h*.49,nr=Math.min(w,h)*.095;
-
-  // electric field rings
-  for(let q=1;q<=4;q++){
-    ctx.strokeStyle="rgba(255,120,140,"+(0.20/q+.04)+")";ctx.lineWidth=1.4;
-    ctx.beginPath();ctx.arc(nx,ny,nr+q*32,0,Math.PI*2);ctx.stroke();
-  }
+  const Z=params.targetZ,E=params.alphaMeV,k=8.9875517923e9,Ej=E*1e6*e;
+  const r=k*(2*Z*e*e)/Ej,rfm=r/1e-15;
+  const nx=w*.72,ny=h*.48,nr=Math.min(w,h)*.09;
   drawNucleus(ctx,nx,ny,nr,18,23);
-  label(ctx,"target nucleus  +"+Z+"e",nx,ny+nr+27,"#ffd1d8",12,"center");
+  label(ctx,"target nucleus +"+Z+"e",nx,ny+nr+25,"#ffd1d8",11,"center");
 
-  const cycle=(Math.sin(t*.9)+1)/2;
-  const minX=nx-nr-48;
-  const x=w*.10+(minX-w*.10)*(cycle<.5?cycle*2:(1-cycle)*2);
-  circle(ctx,x,ny,9,"#ffe98a","#fff7c2");
-  label(ctx,"α  +2e",x,ny+30,"#ffe98a",12,"center");
+  for(let q=1;q<=5;q++){
+    ctx.strokeStyle="rgba(255,120,140,"+(0.17/q+.025)+")";ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(nx,ny,nr+q*28,0,Math.PI*2);ctx.stroke();
+  }
 
-  // force arrow, stronger near nucleus
-  const strength=clamp(1-(nx-x)/(nx-w*.10),0,1);
-  const arrowLen=24+50*strength;
-  arrowLine(ctx,x-12,ny-30,x-arrowLen,ny-30,"rgba(255,176,98,.9)");
-  label(ctx,"repulsive force",x-arrowLen/2,ny-39,"#ffd0a0",10,"center");
+  // Alpha approaches, slows, turns, and moves away.
+  const cyc=(t*.36)%1;
+  const inward=cyc<.5?cyc*2:(1-cyc)*2;
+  const minX=nx-nr-50;
+  const startX=w*.08;
+  const x=startX+(minX-startX)*inward;
+  const relativePE=clamp((x-startX)/(minX-startX),0,1);
+  const relativeKE=1-relativePE;
+  circle(ctx,x,ny,10,"#ffe98a","#fff7c2");label(ctx,"α  +2e",x,ny+28,"#ffe98a",10,"center");
+  arrowLine(ctx,x-10,ny-34,x-22-55*relativePE,ny-34,"rgba(255,175,95,.86)");
+  label(ctx,"repulsion",x-25,ny-45,"#ffc89c",8,"center");
 
-  // energy bars
-  const barX=w*.10,barY=h*.16,barW=w*.32;
-  ctx.fillStyle="#102337";ctx.fillRect(barX,barY,barW,14);ctx.fillRect(barX,barY+28,barW,14);
-  const pe=strength,ke=1-pe;
-  ctx.fillStyle="#67c7ff";ctx.fillRect(barX,barY,barW*ke,14);
-  ctx.fillStyle="#ff9e73";ctx.fillRect(barX,barY+28,barW*pe,14);
-  label(ctx,"kinetic energy",barX,barY-7,"#9fe0ff",10);label(ctx,"electrostatic PE",barX,barY+25,"#ffc0a5",10);
+  // Energy conservation bars.
+  const bx=w*.07,by=h*.15,bw=w*.39;
+  label(ctx,"ENERGY TRANSFER ALONG THE APPROACH",bx,by-14,"#d6ecff",10);
+  ctx.fillStyle="#102337";ctx.fillRect(bx,by,bw,15);ctx.fillRect(bx,by+34,bw,15);
+  ctx.fillStyle="#67c7ff";ctx.fillRect(bx,by,bw*relativeKE,15);
+  ctx.fillStyle="#ff9e73";ctx.fillRect(bx,by+34,bw*relativePE,15);
+  label(ctx,"kinetic energy",bx,by-3,"#9fe0ff",9);
+  label(ctx,"electrostatic potential energy",bx,by+31,"#ffc0a5",9);
+  label(ctx,(relativeKE*E).toFixed(2)+" MeV",bx+bw,by+12,"#ffffff",9,"right");
+  label(ctx,(relativePE*E).toFixed(2)+" MeV",bx+bw,by+46,"#ffffff",9,"right");
 
-  // closest-approach marker
-  ctx.strokeStyle="#ffe98a";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(minX,ny-62);ctx.lineTo(minX,ny+62);ctx.stroke();ctx.setLineDash([]);
-  label(ctx,"closest approach ≈ "+rfm.toFixed(1)+" fm",minX,ny-72,"#ffe98a",11,"center");
+  ctx.strokeStyle="#ffe98a";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(minX,ny-66);ctx.lineTo(minX,ny+66);ctx.stroke();ctx.setLineDash([]);
+  label(ctx,"turning point",minX,ny-76,"#ffe98a",10,"center");
+  label(ctx,"r ≈ "+rfm.toFixed(1)+" fm",minX,ny+82,"#ffe98a",10,"center");
 
-  readout("Head-on energy model: Eₖ = k(2e)(Ze)/r → <strong>r ≈ "+rfm.toFixed(1)+" fm</strong>.<br>Higher alpha energy gives a smaller closest-approach distance; larger target Z gives a larger distance.");
+  // Calculation panel.
+  const px=w*.53,py=h*.71,pw=w*.40;
+  ctx.fillStyle="rgba(6,20,33,.84)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(px,py,pw,h*.16,10);ctx.fill();ctx.stroke();
+  label(ctx,"AT CLOSEST APPROACH",px+10,py+18,"#d8efff",9);
+  label(ctx,"Eₖ(initial) = electrostatic PE",px+10,py+43,"#ffffff",10);
+  label(ctx,"r = k(2e)(Ze)/Eₖ",px+10,py+66,"#aeefff",10);
+  label(ctx,"= "+rfm.toFixed(2)+" fm",px+10,py+90,"#ffe98a",11);
+
+  readout(
+    "Head-on model: as the alpha approaches, <strong>kinetic energy decreases</strong> while <strong>electrostatic potential energy increases</strong>. At the ideal turning point, the initial kinetic energy has become Coulomb potential energy.<br>"+
+    "For Z="+Z+" and Eₖ="+E.toFixed(2)+" MeV, r ≈ <strong>"+rfm.toFixed(2)+" fm</strong>. Higher alpha energy gives a smaller r; larger Z gives a larger r."
+  );
 }
 function renderElectronDiffraction(ctx,w,h){
-  const R=params.diffRadius,lam=params.wavelength;
-  const split=w*.43;
-
-  // apparatus side
-  ctx.fillStyle="#0b1826";ctx.fillRect(w*.04,h*.12,split-w*.06,h*.70);
-  ctx.strokeStyle="#35516d";ctx.strokeRect(w*.04,h*.12,split-w*.06,h*.70);
-  label(ctx,"electron diffraction apparatus",w*.23,h*.17,"#cfe8ff",11,"center");
-
-  // electron gun
-  ctx.fillStyle="#53677b";ctx.beginPath();ctx.roundRect(w*.075,h*.42,w*.10,h*.12,8);ctx.fill();
-  ctx.fillStyle="#dce8f2";ctx.fillRect(w*.165,h*.455,w*.025,h*.05);
-  label(ctx,"electron gun",w*.13,h*.59,"#bcd8ec",10,"center");
-
-  // beam/wavefronts
-  ctx.strokeStyle="rgba(126,232,255,.55)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(w*.19,h*.48);ctx.lineTo(w*.31,h*.48);ctx.stroke();
-  for(let n=0;n<5;n++){ctx.strokeStyle="rgba(126,232,255,.35)";ctx.beginPath();ctx.arc(w*.20+n*w*.022,h*.48,10,Math.PI*.5,Math.PI*1.5);ctx.stroke()}
-
-  // target nucleus and detector arc
-  drawNucleus(ctx,w*.315,h*.48,18,8,10);label(ctx,"nucleus",w*.315,h*.57,"#ffd4d8",10,"center");
-  ctx.strokeStyle="#79d7a8";ctx.lineWidth=5;ctx.beginPath();ctx.arc(w*.315,h*.48,w*.095,-Math.PI*.72,Math.PI*.72);ctx.stroke();
-  label(ctx,"detector",w*.39,h*.29,"#aef0c9",10,"center");
-
-  // diffracted rays
-  [-.55,-.28,0,.28,.55].forEach((a,i)=>{
-    ctx.strokeStyle=i===2?"rgba(126,232,255,.7)":"rgba(126,232,255,.35)";
-    ctx.lineWidth=i===2?2.5:1.4;ctx.beginPath();ctx.moveTo(w*.315,h*.48);ctx.lineTo(w*.315+Math.cos(a)*w*.10,h*.48+Math.sin(a)*w*.10);ctx.stroke();
-  });
-
-  // graph side
-  const left=w*.50,base=h*.78,gw=w*.44,gh=h*.58;
-  ctx.strokeStyle="#7890aa";ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(left,base-gh);ctx.lineTo(left,base);ctx.lineTo(left+gw,base);ctx.stroke();
+  const R=params.diffRadius,lam=params.wavelength,split=w*.43;
   const first=clamp(18*(lam/.7)*(5/R),4,55);
-  ctx.beginPath();
-  for(let i=0;i<=240;i++){
-    const ang=65*i/240;
-    const x=ang/(first||1)*Math.PI;
-    const sinc=Math.abs(x)<.04?1:Math.sin(x)/x;
-    const intensity=Math.pow(sinc,2)*(0.96+0.04*Math.cos(x*.7));
-    const px=left+gw*i/240,py=base-gh*intensity;
-    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
-  }
-  ctx.strokeStyle="#67c7ff";ctx.lineWidth=3;ctx.stroke();
-  const minX=left+gw*(first/65);ctx.strokeStyle="#ffe98a";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(minX,base-gh*.05);ctx.lineTo(minX,base);ctx.stroke();ctx.setLineDash([]);
-  label(ctx,"intensity",left-6,base-gh,"#cfe8ff",10,"right");label(ctx,"scattering angle",left+gw,base+20,"#cfe8ff",10,"right");
-  label(ctx,"first minimum ≈ "+first.toFixed(1)+"°",minX,base-12,"#ffe98a",10,"center");
+  const compareR=R*1.35,first2=clamp(18*(lam/.7)*(5/compareR),3,55);
 
-  readout("Electron wavelength ≈ <strong>"+lam.toFixed(2)+" fm</strong> · nuclear radius = <strong>"+R.toFixed(1)+" fm</strong>.<br>At fixed wavelength, a larger nucleus shifts diffraction minima to smaller angles.");
+  ctx.fillStyle="#0b1826";ctx.fillRect(w*.035,h*.11,split-w*.045,h*.73);
+  ctx.strokeStyle="#35516d";ctx.strokeRect(w*.035,h*.11,split-w*.045,h*.73);
+  label(ctx,"WAVE PROBE OF THE NUCLEUS",w*.22,h*.16,"#cfe8ff",11,"center");
+
+  // Electron gun and de Broglie wavefronts.
+  ctx.fillStyle="#53677b";ctx.beginPath();ctx.roundRect(w*.065,h*.40,w*.10,h*.13,8);ctx.fill();
+  ctx.fillStyle="#e5eef6";ctx.fillRect(w*.155,h*.44,w*.025,h*.05);
+  label(ctx,"electron gun",w*.115,h*.58,"#bcd8ec",9,"center");
+  for(let n=0;n<7;n++){
+    const x=w*.19+n*w*.017;
+    ctx.strokeStyle="rgba(126,232,255,.35)";ctx.beginPath();ctx.arc(x,h*.465,13,Math.PI*.5,Math.PI*1.5);ctx.stroke();
+  }
+  label(ctx,"λ = "+lam.toFixed(2)+" fm",w*.23,h*.39,"#9fe8ff",9,"center");
+
+  // Nucleus as finite scattering object.
+  drawNucleus(ctx,w*.315,h*.465,21,9,11);
+  ctx.strokeStyle="rgba(255,224,138,.75)";ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(w*.315,h*.465,28,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  label(ctx,"radius R = "+R.toFixed(1)+" fm",w*.315,h*.57,"#ffe9a8",9,"center");
+
+  // Detector arc and diffracted rays.
+  ctx.strokeStyle="#79d7a8";ctx.lineWidth=5;ctx.beginPath();ctx.arc(w*.315,h*.465,w*.10,-Math.PI*.72,Math.PI*.72);ctx.stroke();ctx.lineWidth=2;
+  [-.62,-.34,0,.34,.62].forEach((a,i)=>{
+    ctx.strokeStyle=i===2?"rgba(126,232,255,.75)":"rgba(126,232,255,.34)";
+    ctx.lineWidth=i===2?2.2:1.2;ctx.beginPath();ctx.moveTo(w*.315,h*.465);ctx.lineTo(w*.315+Math.cos(a)*w*.10,h*.465+Math.sin(a)*w*.10);ctx.stroke();
+  });
+  label(ctx,"angular detector",w*.37,h*.26,"#aef0c9",9,"center");
+
+  // Intensity-angle graph with comparison curve.
+  const left=w*.49,base=h*.79,gw=w*.45,gh=h*.59;
+  ctx.strokeStyle="#7890aa";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(left,base-gh);ctx.lineTo(left,base);ctx.lineTo(left+gw,base);ctx.stroke();
+  function curve(minAngle,color,alpha=1){
+    ctx.beginPath();
+    for(let i=0;i<=260;i++){
+      const ang=65*i/260,x=ang/(minAngle||1)*Math.PI;
+      const sinc=Math.abs(x)<.04?1:Math.sin(x)/x;
+      const intensity=Math.pow(sinc,2);
+      const px=left+gw*i/260,py=base-gh*intensity;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=color;ctx.globalAlpha=alpha;ctx.lineWidth=2.5;ctx.stroke();ctx.globalAlpha=1;
+  }
+  curve(first,"#67c7ff",1);curve(first2,"#ffb37a",.65);
+  const minX=left+gw*(first/65),minX2=left+gw*(first2/65);
+  ctx.strokeStyle="#ffe98a";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(minX,base-gh*.04);ctx.lineTo(minX,base);ctx.stroke();ctx.setLineDash([]);
+  label(ctx,"selected R: first min "+first.toFixed(1)+"°",minX,base-12,"#ffe98a",8,"center");
+  label(ctx,"larger R comparison",left+gw*.68,base-gh*.82,"#ffb37a",8);
+  label(ctx,"intensity",left-6,base-gh,"#cfe8ff",9,"right");label(ctx,"scattering angle",left+gw,base+18,"#cfe8ff",9,"right");
+
+  // Interpretation panel.
+  const bx=w*.06,by=h*.68,bw=w*.34;
+  ctx.fillStyle="rgba(6,20,33,.82)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(bx,by,bw,h*.13,9);ctx.fill();ctx.stroke();
+  label(ctx,"WHY THE MINIMUM MOVES",bx+10,by+17,"#d8efff",8);
+  label(ctx,"same λ + larger R",bx+10,by+42,"#ffffff",9);
+  label(ctx,"→ narrower angular pattern",bx+10,by+62,"#aeefff",9);
+  label(ctx,"→ first minimum at smaller angle",bx+10,by+82,"#ffe98a",9);
+
+  readout(
+    "Electron de Broglie wavelength = <strong>"+lam.toFixed(2)+" fm</strong>; selected nuclear radius = <strong>"+R.toFixed(1)+" fm</strong>.<br>"+
+    "The diffraction pattern depends on the ratio of wavelength to nuclear size. At fixed λ, increasing R shifts the characteristic minima to <strong>smaller scattering angles</strong>. The orange comparison curve shows that change."
+  );
 }
 function renderModeration(ctx,w,h,t){
   const M=params.massRatio,n=Math.round(params.collisionCount);
