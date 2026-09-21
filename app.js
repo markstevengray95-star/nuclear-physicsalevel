@@ -129,6 +129,18 @@ const sims = [
     check:{q:"What happens to Z in beta-minus decay?",opts:["Decreases by 1","Increases by 1","Decreases by 2"],a:1}
   },
   {
+    id:"decayChain", code:"3.8.1.4", title:"Animated decay chain",
+    subtitle:"Follow the natural U-238 decay series step by step and watch how alpha and beta-minus decays change A, Z and N until a stable lead nucleus is reached.",
+    controls:[
+      {key:"chainStep",label:"Decay-chain step",type:"range",min:0,max:14,step:1,value:0,unit:""},
+      {key:"chainView",label:"View",type:"select",value:"timeline",options:[["timeline","Timeline + animated nucleus"],["nz","N–Z path + animated nucleus"]]}
+    ],
+    simple:"A decay chain is a sequence of unstable parent nuclei. Each alpha or beta-minus decay creates a new daughter nucleus, which may itself be unstable and decay again.",
+    exam:"Use A and Z bookkeeping at every step. Alpha decay gives A−4 and Z−2. Beta-minus decay leaves A unchanged and gives Z+1. Gamma emission would leave A and Z unchanged. The specific natural chain is an application; the examinable skill is tracking the nuclear changes correctly.",
+    mistake:"Do not assume every daughter nucleus is stable after one decay. In a decay chain, the daughter can remain radioactive and decay again.",
+    check:{q:"In beta-minus decay, what happens to A and Z?",opts:["A unchanged, Z +1","A −4, Z −2","A unchanged, Z −1"],a:0}
+  },
+  {
     id:"radius", code:"3.8.1.5", title:"Nuclear radius and density",
     subtitle:"Change nucleon number and see why R ∝ A^(1/3) implies nearly constant nuclear density.",
     controls:[
@@ -692,6 +704,123 @@ function renderStability(ctx,w,h){
     "Selected parent is "+region+". The arrow shows the bookkeeping effect of <strong>"+params.decayMode+"</strong>; gamma produces no N–Z movement."
   );
 }
+function renderDecayChain(ctx,w,h,t){
+  const chain=[
+    {sym:"U",name:"uranium-238",A:238,Z:92,mode:"α"},
+    {sym:"Th",name:"thorium-234",A:234,Z:90,mode:"β⁻"},
+    {sym:"Pa",name:"protactinium-234",A:234,Z:91,mode:"β⁻"},
+    {sym:"U",name:"uranium-234",A:234,Z:92,mode:"α"},
+    {sym:"Th",name:"thorium-230",A:230,Z:90,mode:"α"},
+    {sym:"Ra",name:"radium-226",A:226,Z:88,mode:"α"},
+    {sym:"Rn",name:"radon-222",A:222,Z:86,mode:"α"},
+    {sym:"Po",name:"polonium-218",A:218,Z:84,mode:"α"},
+    {sym:"Pb",name:"lead-214",A:214,Z:82,mode:"β⁻"},
+    {sym:"Bi",name:"bismuth-214",A:214,Z:83,mode:"β⁻"},
+    {sym:"Po",name:"polonium-214",A:214,Z:84,mode:"α"},
+    {sym:"Pb",name:"lead-210",A:210,Z:82,mode:"β⁻"},
+    {sym:"Bi",name:"bismuth-210",A:210,Z:83,mode:"β⁻"},
+    {sym:"Po",name:"polonium-210",A:210,Z:84,mode:"α"},
+    {sym:"Pb",name:"lead-206",A:206,Z:82,mode:"stable"}
+  ];
+  let step=Math.round(params.chainStep||0);
+  if(running){
+    step=Math.min(chain.length-1,Math.floor((t/1.6)%chain.length));
+    params.chainStep=step;
+    const input=$('[data-key="chainStep"]');
+    if(input){input.value=step;const out=input.nextElementSibling;if(out)out.textContent=String(step);}
+  }
+  const p=chain[step],next=chain[Math.min(step+1,chain.length-1)];
+  const phase=running?((t/1.6)%1):.62;
+  const parentN=p.A-p.Z,daughterN=next.A-next.Z;
+
+  label(ctx,"ANIMATED U-238 DECAY SERIES",w*.05,h*.07,"#d8ecff",13);
+  label(ctx,"not to timescale · focus on A/Z bookkeeping",w*.95,h*.07,"#90a7bb",9,"right");
+
+  // main nucleus transition
+  const cx=w*.29,cy=h*.35,R=Math.min(w,h)*.11;
+  if(step===chain.length-1){
+    drawNucleus(ctx,cx,cy,R,Math.min(p.Z,16),Math.min(parentN,18));
+    label(ctx,p.sym+"-"+p.A+"  stable",cx,cy+R+26,"#9cf0bc",12,"center");
+    label(ctx,"chain ends at stable lead-206",cx,cy-R-30,"#9cf0bc",11,"center");
+  }else{
+    const split=phase<.48;
+    const shown=split?p:next;
+    drawNucleus(ctx,cx,cy,R,Math.min(shown.Z,16),Math.min(shown.A-shown.Z,18));
+    label(ctx,(split?p.sym+"-"+p.A:next.sym+"-"+next.A),cx,cy+R+26,split?"#ffe9a8":"#a9e8c4",12,"center");
+
+    // emitted particle
+    const ex=cx+R+(w*.16)*clamp((phase-.28)/.55,0,1),ey=cy-R*.38*(phase>.28?1:0);
+    if(p.mode==="α"){
+      circle(ctx,ex,ey,10,"#ff9c70","#fff2d9");
+      label(ctx,"α  (A=4, Z=2)",ex,ey-18,"#ffd0ad",10,"center");
+    }else{
+      circle(ctx,ex,ey,6,"#7ee8ff","#e8ffff");
+      label(ctx,"β⁻",ex,ey-15,"#bff4ff",10,"center");
+    }
+    arrowLine(ctx,cx+R*.55,cy,ex-10,ey,"rgba(255,220,150,.45)");
+  }
+
+  // bookkeeping panel
+  const px=w*.58,py=h*.15,pw=w*.36;
+  ctx.fillStyle="rgba(6,20,33,.84)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(px,py,pw,h*.34,12);ctx.fill();ctx.stroke();
+  label(ctx,"CURRENT STEP",px+12,py+22,"#d8efff",10);
+  label(ctx,p.name,px+12,py+50,"#ffffff",11);
+  label(ctx,"A = "+p.A+"   Z = "+p.Z+"   N = "+parentN,px+12,py+73,"#c6dced",10);
+  if(p.mode!=="stable"){
+    label(ctx,"emits "+p.mode,px+12,py+103,p.mode==="α"?"#ffbf98":"#aeefff",11);
+    const dA=next.A-p.A,dZ=next.Z-p.Z,dN=daughterN-parentN;
+    label(ctx,"ΔA = "+dA+"   ΔZ = "+(dZ>=0?"+":"")+dZ+"   ΔN = "+(dN>=0?"+":"")+dN,px+12,py+128,"#ffe98a",10);
+    label(ctx,"daughter: "+next.sym+"-"+next.A,px+12,py+157,"#a7e7c4",11);
+  }else{
+    label(ctx,"no further radioactive decay in this series",px+12,py+108,"#9cf0bc",10);
+  }
+
+  // timeline / NZ view
+  if(params.chainView==="timeline"){
+    const left=w*.05,right=w*.95,y=h*.72;
+    ctx.strokeStyle="rgba(140,175,205,.25)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();
+    chain.forEach((n,i)=>{
+      const x=left+(right-left)*i/(chain.length-1);
+      const active=i===step,done=i<step;
+      circle(ctx,x,y,active?8:5,active?"#ffe98a":done?"#8fe6b8":"#557088",active?"#fff":null);
+      if(i<chain.length-1){
+        const mode=chain[i].mode;
+        label(ctx,mode,x+(right-left)/(chain.length-1)*.5,y-13,mode==="α"?"#ffb38d":"#9de9ff",8,"center");
+      }
+      if(i===0||i===step||i===chain.length-1)label(ctx,n.sym+"-"+n.A,x,y+23,active?"#fff":"#afc2d2",8,"center");
+    });
+    label(ctx,"parent",left,y-32,"#a7b9ca",8,"center");
+    label(ctx,"stable daughter",right,y-32,"#9cf0bc",8,"center");
+  }else{
+    const ox=w*.08,oy=h*.91,gw=w*.82,gh=h*.28;
+    ctx.strokeStyle="#6e859d";ctx.beginPath();ctx.moveTo(ox,oy-gh);ctx.lineTo(ox,oy);ctx.lineTo(ox+gw,oy);ctx.stroke();
+    let prev=null;
+    chain.forEach((n,i)=>{
+      const N=n.A-n.Z;
+      const x=ox+gw*(n.Z-80)/14,y=oy-gh*(N-120)/30;
+      if(prev){ctx.strokeStyle=i<=step?"rgba(255,232,138,.8)":"rgba(125,155,185,.25)";ctx.lineWidth=i<=step?2.3:1;ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(x,y);ctx.stroke();}
+      circle(ctx,x,y,i===step?7:4,i===step?"#ffe98a":i<step?"#8fe6b8":"#557088");
+      prev={x,y};
+    });
+    label(ctx,"Z",ox+gw,oy+16,"#cfe8ff",9,"right");label(ctx,"N",ox-10,oy-gh,"#cfe8ff",9,"right");
+    label(ctx,"each α step moves down-left; each β⁻ step moves right",ox,oy-gh-12,"#a9bfd2",9);
+  }
+
+  const eq=p.mode==="α"
+    ? p.sym+"-"+p.A+" → "+next.sym+"-"+next.A+" + α"
+    : p.mode==="β⁻"
+      ? p.sym+"-"+p.A+" → "+next.sym+"-"+next.A+" + β⁻"
+      : "Pb-206 is stable in this decay series";
+  readout(
+    "<strong>"+eq+"</strong><br>"+
+    (p.mode==="α"
+      ? "Alpha decay reduces A by 4 and Z by 2."
+      : p.mode==="β⁻"
+        ? "Beta-minus decay leaves A unchanged and increases Z by 1 because a neutron changes into a proton."
+        : "The animation has reached stable Pb-206.")+
+    "<br>The natural series is shown as an application; AQA mainly requires you to track the changes in N, Z and A correctly."
+  );
+}
 function renderRadius(ctx,w,h){
   const A=params.A,r0=params.r0,R=r0*Math.cbrt(A),scale=Math.min(w,h)*.020;
   const u=1.66053906660e-27,rm=R*1e-15,m=A*u,V=(4/3)*Math.PI*Math.pow(rm,3),rho=m/V;
@@ -1205,6 +1334,7 @@ function renderSim(now){
   else if(id==="radiation")renderRadiation(ctx,w,h,t);
   else if(id==="decay")renderDecay(ctx,w,h,t);
   else if(id==="stability")renderStability(ctx,w,h);
+  else if(id==="decayChain")renderDecayChain(ctx,w,h,t);
   else if(id==="energyLevels")renderEnergyLevels(ctx,w,h,t);
   else if(id==="closestApproach")renderClosestApproach(ctx,w,h,t);
   else if(id==="electronDiffraction")renderElectronDiffraction(ctx,w,h);
