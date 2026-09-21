@@ -36,6 +36,8 @@ jobs:
           test -s learning-platform.css
           test -s lesson-depth.css
           test -s lesson-depth.js
+          test -s complete-lesson-notes.css
+          test -s complete-lesson-notes.js
           test -s learning-platform.js
           test -s manifest.webmanifest
           test -s sw.js
@@ -50,6 +52,7 @@ jobs:
           node --check rutherford-experiment.js
           node --check learning-platform.js
           node --check lesson-depth.js
+          node --check complete-lesson-notes.js
           node --check sw.js
       - name: Check integrations
         run: |
@@ -69,6 +72,9 @@ jobs:
           grep -q "learning-platform.js" index.html
           grep -q "lesson-depth.js" index.html
           grep -q "lesson-depth.css" index.html
+          grep -q "complete-lesson-notes.js" index.html
+          grep -q "complete-lesson-notes.css" index.html
+          grep -q "Complete lesson reference" complete-lesson-notes.js
           grep -q "Auto-mark entire paper" learning-platform.js
           grep -q "Full-spec teaching" lesson-depth.js
           grep -q "learning-platform.css" index.html
