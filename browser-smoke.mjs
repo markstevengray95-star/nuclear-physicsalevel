@@ -178,6 +178,20 @@ try{
     if(!txt.trim()) throw new Error("Empty simulation readout for "+simName);
   }
   console.log("PASS upgraded simulation suite");
+  await page.locator(".sim-tab",{hasText:"Animated decay chain"}).click();
+  await page.waitForTimeout(100);
+  await must('[data-key="chainStep"]',"decay-chain step control");
+  const playLabel=await page.locator("#playPause").innerText();
+  if(playLabel.trim()==="Pause") await page.click("#playPause");
+  await page.locator('[data-key="chainStep"]').evaluate(el=>{el.value="8";el.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.waitForTimeout(80);
+  let chainReadout=await page.locator("#simReadout").innerText();
+  if(!/Pb-214|Bi-214|beta-minus|Beta-minus/i.test(chainReadout)) throw new Error("Decay-chain step did not update correctly");
+  await page.selectOption('[data-key="chainView"]',"nz");
+  await page.waitForTimeout(60);
+  chainReadout=await page.locator("#simReadout").innerText();
+  if(!/AQA|decay|beta|alpha|stable/i.test(chainReadout)) throw new Error("Decay-chain N-Z view did not render a valid readout");
+  console.log("PASS animated decay chain");
 
   await must('.nav-button[data-view="rutherfordexp"]',"3D Rutherford nav");
   await page.click('.nav-button[data-view="rutherfordexp"]');
