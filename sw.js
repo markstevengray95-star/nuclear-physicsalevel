@@ -1,4 +1,4 @@
-const CACHE="nuclear-physics-v4";
+const CACHE="nuclear-physics-v5";
 const CORE=[
  "/","/index.html","/styles.css","/lesson-sequencer.css","/simulation-upgrades.css","/mastery-upgrades.css",
  "/interactive-lessons.css","/rutherford-experiment.css","/learning-platform.css","/lesson-depth.css","/complete-lesson-notes.css",
