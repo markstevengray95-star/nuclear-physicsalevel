@@ -724,8 +724,8 @@ function renderDecayChain(ctx,w,h,t){
     {sym:"Pb",name:"lead",A:206,Z:82,mode:"stable"}
   ];
   const elementColor={U:"#8fd3ff",Th:"#a7dcff",Pa:"#b4e4ff",Ra:"#ffd89b",Rn:"#cfb8ff",Po:"#ffb6c8",Pb:"#a9d4c1",Bi:"#d8c2ff"};
-  let step=Math.round(params.chainStep||0);
-  let phase=clamp((params.chainPhase||0)/100,0,1);
+  let step=clamp(Math.round(Number(params.chainStep)||0),0,chain.length-1);
+  let phase=clamp((Number(params.chainPhase)||0)/100,0,1);
   if(running){
     const cycle=t/2.1;
     step=Math.min(chain.length-1,Math.floor(cycle%chain.length));
@@ -735,11 +735,14 @@ function renderDecayChain(ctx,w,h,t){
     if(stepInput){stepInput.value=step;const out=stepInput.nextElementSibling;if(out)out.textContent=String(step);}
     if(phaseInput){phaseInput.value=params.chainPhase;const out=phaseInput.nextElementSibling;if(out)out.textContent=String(params.chainPhase)+" %";}
   }
-  const p=chain[step],next=chain[Math.min(step+1,chain.length-1)],parentN=p.A-p.Z,daughterN=next.A-next.Z;
+  const p=chain[step]||chain[0];
+  const next=chain[Math.min(step+1,chain.length-1)]||p;
+  const parentN=p.A-p.Z,daughterN=next.A-next.Z;
   const changed=phase>=.52||p.mode==="stable";
   const shown=changed?next:p;
 
   function nucleusParticles(x,y,r,node,transitionMode,progress){
+    node=node||p||chain[0];
     const total=42,golden=2.399963;
     const protonFrac=node.Z/node.A;
     for(let i=0;i<total;i++){
