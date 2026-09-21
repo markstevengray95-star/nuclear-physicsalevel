@@ -21,7 +21,14 @@ const profiles={
   challenge:"If the elapsed time increases by one half-life, what happens to the expected number remaining?",
   answers:["It halves","It doubles","It becomes zero"],correct:0
  },
- "N–Z stability map":{
+ "Animated decay chain":{
+  what:"A step-by-step U-238 natural decay series used to visualise how repeated alpha and beta-minus decays change the daughter nucleus until stable Pb-206 is reached.",
+  scale:"The timing is deliberately compressed and the drawn nuclei are schematic. Real half-lives in a natural decay series span enormously different timescales.",
+  key:"Alpha decay: A−4, Z−2, N−2. Beta-minus decay: A unchanged, Z+1, N−1. A decay chain continues because a daughter nucleus can itself be unstable.",
+  challenge:"Why can a decay chain contain many separate steps?",
+  answers:["A daughter nucleus can still be unstable","Every alpha particle decays again","Gamma radiation always creates a new element"],correct:0
+ },
+"N–Z stability map":{
   what:"How decay processes change neutron number N and proton number Z.",
   scale:"The stable band is schematic and intended to show direction of nuclear change.",
   challenge:"Which process increases Z by one while leaving A unchanged?",
@@ -112,6 +119,7 @@ function renderInfo(){
   "Radiation and absorption":"Alpha is strongly ionising/weakly penetrating; beta is intermediate; gamma is highly penetrating and attenuated progressively.",
   "Random decay and half-life":"A = λN, N = N₀e⁻ˡᵗ and T½ = ln2/λ. Individual decays are random; populations are predictable.",
   "N–Z stability map":"Alpha changes A by −4 and Z by −2; β⁻ gives Z+1; β⁺/electron capture give Z−1; gamma leaves A and Z unchanged.",
+  "Animated decay chain":"Follow each parent → daughter step and check the A/Z bookkeeping. Use the N–Z view to see alpha moves down-left while beta-minus moves right.",
   "Nuclear radius and density":"R = r₀A¹ᐟ³. Since volume ∝ R³ ∝ A and mass ∝ A, nuclear density is approximately constant.",
   "Mass defect and binding energy":"Binding energy = Δmc²; 1 u = 931.5 MeV. Binding energy per nucleon compares how tightly nuclei are bound.",
   "Binding-energy curve":"Fusion of light nuclei and fission of heavy nuclei can release energy by moving products toward higher binding energy per nucleon.",
