@@ -192,6 +192,18 @@ try{
   chainReadout=await page.locator("#simReadout").innerText();
   if(!/AQA|decay|beta|alpha|stable/i.test(chainReadout)) throw new Error("Decay-chain N-Z view did not render a valid readout");
   console.log("PASS animated decay chain");
+  await must('[data-key="chainPhase"]',"decay event progress control");
+  await page.locator('[data-key="chainStep"]').evaluate(el=>{el.value="0";el.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.locator('[data-key="chainPhase"]').evaluate(el=>{el.value="75";el.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.waitForTimeout(60);
+  let realisticReadout=await page.locator("#simReadout").innerText();
+  if(!/uranium.*thorium|two protons|Z.*90/i.test(realisticReadout)) throw new Error("Alpha element change was not shown");
+  await page.locator('[data-key="chainStep"]').evaluate(el=>{el.value="1";el.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.locator('[data-key="chainPhase"]').evaluate(el=>{el.value="75";el.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.waitForTimeout(60);
+  realisticReadout=await page.locator("#simReadout").innerText();
+  if(!/thorium.*protactinium|neutron becomes a proton|Z.*91/i.test(realisticReadout)) throw new Error("Beta-minus element change was not shown");
+  console.log("PASS realistic element-changing decay chain");
 
   await must('.nav-button[data-view="rutherfordexp"]',"3D Rutherford nav");
   await page.click('.nav-button[data-view="rutherfordexp"]');
