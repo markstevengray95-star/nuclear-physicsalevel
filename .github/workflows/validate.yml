@@ -82,4 +82,7 @@ jobs:
           grep -q "Learning dashboard" learning-platform.js
           grep -q "Lesson sequencer" lesson-sequencer.js
           grep -q "Complete student lesson" interactive-lessons.js
+          grep -q "eventStage" app.js
+          grep -q "excited U-236" app.js
+          grep -q "prompt neutrons" app.js
           grep -q "Required practical 12" index.html
