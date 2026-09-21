@@ -79,9 +79,9 @@ const profiles={
   answers:["A smaller angle","A larger angle","The same angle"],correct:0
  },
  "Neutron moderation by collisions":{
-  what:"Reduction of neutron kinetic energy through repeated collisions with moderator nuclei.",
-  scale:"The collision sequence is simplified and does not model a particular reactor geometry or material in detail.",
-  key:"Moderation means slowing neutrons. Efficient energy transfer occurs when target and neutron masses are not extremely different.",
+  what:"Collision-by-collision neutron slowing, with a separate panel showing how the target-to-neutron mass ratio changes the maximum head-on energy transfer.",
+  scale:"The path is schematic and the repeated-collision energy reduction is a teaching model rather than a detailed material transport simulation.",
+  key:"Moderation is kinetic-energy reduction by collisions. Energy transfer is most effective when the target mass is not extremely different from the neutron mass.",
   challenge:"Which moderator-nucleus mass gives more effective energy transfer per collision?",
   answers:["A mass closer to the neutron mass","A nucleus hundreds of times heavier","Mass makes no difference"],correct:0
  },
@@ -131,15 +131,15 @@ function renderInfo(){
 function dataPanel(){
  const rows={
   "Rutherford scattering":[["Variable","Effect"],["impact parameter ↓","deflection ↑"],["alpha energy ↑","deflection ↓"]],
-  "Random decay and half-life":[["Quantity","Relationship"],["N","N₀e⁻ˡᵗ"],["T½","ln2 / λ"]],
-  "Nuclear radius and density":[["Quantity","Relationship"],["R","r₀A¹ᐟ³"],["volume","∝ A"]],
-  "Mass defect and binding energy":[["Quantity","Relationship"],["ΔE","Δmc²"],["1 u","931.5 MeV"]],
+  "Random decay and half-life":[["Quantity","Relationship"],["N","N₀e⁻ˡᵗ"],["A","λN"],["T½","ln2 / λ"],["sample","fluctuates around expectation"]],
+  "Nuclear radius and density":[["Quantity","Relationship"],["R","r₀A¹ᐟ³"],["volume","∝ A"],["mass","∝ A"],["density","≈ constant"]],
+  "Mass defect and binding energy":[["Quantity","Relationship"],["ΔE","Δmc²"],["1 u","931.5 MeV"],["BE/A","compare tightness of binding"]],
   "Binding-energy curve":[["Region","Energy route"],["light nuclei","fusion toward peak"],["heavy nuclei","fission toward peak"]],
   "Thermal reactor systems":[["System","Main role"],["moderator","slow neutrons"],["control rods","absorb neutrons"],["coolant","transfer thermal energy"]],
   "Nuclear energy levels and gamma emission":[["Quantity","Relationship"],["photon energy","ΔE = hf"],["gamma emission","A and Z unchanged"]],
   "Alpha closest approach":[["Change","Effect"],["alpha energy ↑","closest approach ↓"],["target Z ↑","closest approach ↑"]],
   "Electron diffraction by nuclei":[["Change","Effect"],["nuclear radius ↑","1st minimum angle ↓"],["electron wavelength ↑","diffraction angle ↑"]],
-  "Neutron moderation by collisions":[["Idea","Meaning"],["moderator","slows neutrons"],["similar masses","better energy transfer"]]
+  "Neutron moderation by collisions":[["Idea","Meaning"],["moderator","slows neutrons"],["similar masses","better energy transfer"],["absorption","different from moderation"]]
  }[title()]||[["Mode","Purpose"],["prediction","before changing variable"],["observation","what changes"],["explanation","why it changes"]];
  return '<div class="sim-mini-data"><table>'+rows.map((r,i)=>'<tr>'+r.map(x=>(i===0?'<th>'+x+'</th>':'<td>'+x+'</td>')).join("")+'</tr>').join("")+'</table></div>'
 }
