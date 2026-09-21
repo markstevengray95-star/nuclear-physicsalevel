@@ -204,6 +204,27 @@ try{
   realisticReadout=await page.locator("#simReadout").innerText();
   if(!/thorium.*protactinium|neutron becomes a proton|Z.*91/i.test(realisticReadout)) throw new Error("Beta-minus element change was not shown");
   console.log("PASS realistic element-changing decay chain");
+  for (const simName of [
+    "Nuclear energy levels and gamma emission",
+    "Alpha closest approach",
+    "Electron diffraction by nuclei",
+    "Thermal reactor systems"
+  ]) {
+    await page.locator(".sim-tab",{hasText:simName}).click();
+    await page.waitForTimeout(90);
+    const txt=await page.locator("#simReadout").innerText();
+    if(!txt.trim()) throw new Error("Empty upgraded readout for "+simName);
+  }
+  await page.locator(".sim-tab",{hasText:"Thermal reactor systems"}).click();
+  await page.selectOption('[data-key="reactorFocus"]',"neutrons");
+  await page.waitForTimeout(50);
+  let reactorText=await page.locator("#simReadout").innerText();
+  if(!/moderator|control rods|neutron/i.test(reactorText)) throw new Error("Reactor neutron teaching view failed");
+  await page.selectOption('[data-key="reactorFocus"]',"heat");
+  await page.waitForTimeout(50);
+  reactorText=await page.locator("#simReadout").innerText();
+  if(!/coolant|thermal energy|heat/i.test(reactorText)) throw new Error("Reactor heat teaching view failed");
+  console.log("PASS remaining simulation realism suite");
 
   await must('.nav-button[data-view="rutherfordexp"]',"3D Rutherford nav");
   await page.click('.nav-button[data-view="rutherfordexp"]');
