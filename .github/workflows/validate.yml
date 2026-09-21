@@ -86,6 +86,10 @@ jobs:
           grep -q "excited U-236" app.js
           grep -q "prompt neutrons" app.js
           grep -q "ONE COLLISION" app.js
+          grep -q "stable lead-206" app.js
+          grep -q "chainStep" app.js
+          grep -q "ANIMATED U-238 DECAY SERIES" app.js
+          grep -q "Animated decay chain" app.js
           grep -q "fusion: light nuclei" app.js
           grep -q "SEPARATED NUCLEONS" app.js
           grep -q "DENSITY CHECK" app.js
