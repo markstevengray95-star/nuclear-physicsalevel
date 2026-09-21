@@ -1,9 +1,9 @@
-const CACHE="nuclear-physics-v2";
+const CACHE="nuclear-physics-v3";
 const CORE=[
  "/","/index.html","/styles.css","/lesson-sequencer.css","/simulation-upgrades.css","/mastery-upgrades.css",
- "/interactive-lessons.css","/rutherford-experiment.css","/learning-platform.css",
+ "/interactive-lessons.css","/rutherford-experiment.css","/learning-platform.css","/lesson-depth.css",
  "/app.js","/simulation-upgrades.js","/lesson-sequencer.js","/mastery-upgrades.js","/interactive-lessons.js",
- "/rutherford-experiment.js","/learning-platform.js","/vendor/three.module.min.js","/vendor/three.core.min.js","/app-icon.svg"
+ "/rutherford-experiment.js","/lesson-depth.js","/learning-platform.js","/vendor/three.module.min.js","/vendor/three.core.min.js","/app-icon.svg"
 ];
 self.addEventListener("install",event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
