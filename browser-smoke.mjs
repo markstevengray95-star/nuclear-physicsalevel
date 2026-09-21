@@ -155,6 +155,16 @@ try{
   await must("#view-mastery.active-view","A-star hub opens");
   await must("#diagQuestion","A-star diagnostic renders");
 
+  await page.click('.nav-button[data-view="lab"]');
+  await must("#view-lab.active-view","simulation lab opens");
+  await page.locator(".sim-tab",{hasText:"Fission chain reaction"}).click();
+  await must('[data-key="eventStage"]',"fission event-stage control");
+  await page.locator('[data-key="eventStage"]').evaluate(el=>{el.value="5";el.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.waitForTimeout(120);
+  const fissionReadout=await page.locator("#simReadout").innerText();
+  if(!/U-236|prompt neutrons|next generation/i.test(fissionReadout)) throw new Error("Detailed fission sequence did not update");
+  console.log("PASS detailed fission sequence");
+
   await must('.nav-button[data-view="rutherfordexp"]',"3D Rutherford nav");
   await page.click('.nav-button[data-view="rutherfordexp"]');
   await must("#view-rutherfordexp.active-view","3D Rutherford view opens");
