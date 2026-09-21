@@ -87,6 +87,10 @@ jobs:
           grep -q "prompt neutrons" app.js
           grep -q "ONE COLLISION" app.js
           grep -q "stable lead-206" app.js
+          grep -q "element changes because" app.js
+          grep -q "n → p + β⁻ + anti-ν" app.js
+          grep -q "REALISTIC DECAY-CHAIN TRANSFORMATION" app.js
+          grep -q "chainPhase" app.js
           grep -q "chainStep" app.js
           grep -q "ANIMATED U-238 DECAY SERIES" app.js
           grep -q "Animated decay chain" app.js
