@@ -38,6 +38,9 @@ try{
   await must('[data-il-panel="learn"].active',"learn tab opens");
   await must("[data-cco]","knowledge check renders");
   await must("#lessonDepthPanel","full-spec lesson teaching");
+  await must("#completeLessonNotes","complete lesson reference notes");
+  const noteSections=await page.locator("#completeLessonNotes .cln-sections article").count();
+  if(noteSections<3) throw new Error("Complete lesson notes did not render enough teaching sections");
   await page.locator("#ldRecall").fill("A complete explanation using the key nuclear physics relationship and evidence.");
   await page.click("#ldCompare");
   await must("#ldFeedback .ld-feedback","lesson depth retrieval feedback");
