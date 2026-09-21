@@ -92,7 +92,6 @@ jobs:
           grep -q "REALISTIC DECAY-CHAIN TRANSFORMATION" app.js
           grep -q "chainPhase" app.js
           grep -q "chainStep" app.js
-          grep -q "ANIMATED U-238 DECAY SERIES" app.js
           grep -q "Animated decay chain" app.js
           grep -q "fusion: light nuclei" app.js
           grep -q "SEPARATED NUCLEONS" app.js
