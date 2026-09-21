@@ -37,6 +37,10 @@ try{
   await page.click('[data-il-tab="learn"]');
   await must('[data-il-panel="learn"].active',"learn tab opens");
   await must("[data-cco]","knowledge check renders");
+  await must("#lessonDepthPanel","full-spec lesson teaching");
+  await page.locator("#ldRecall").fill("A complete explanation using the key nuclear physics relationship and evidence.");
+  await page.click("#ldCompare");
+  await must("#ldFeedback .ld-feedback","lesson depth retrieval feedback");
   const nextCount=await page.locator('[data-il-panel="learn"] #ilNext').count();
   if(!nextCount){
     const learnHtml=await page.locator('[data-il-panel="learn"]').innerHTML();
@@ -123,6 +127,10 @@ try{
   await page.click('[data-lp-tab="paper"]');
   await page.click("#lpGeneratePaper");
   await must("[data-paper-answer]","paper generator questions");
+  await page.locator("[data-paper-answer]").first().fill("The answer includes the relevant nuclear physics relationship, evidence and calculation steps.");
+  await page.click("#lpAutoMarkPaper");
+  await must(".lp-auto-score","paper auto-mark result");
+  await must(".lp-paper-summary","paper auto-mark total");
   await page.click('[data-lp-tab="teacher"]');
   await must("#lpBuildAssignment","assignment builder");
   await page.click("#lpBuildAssignment");
