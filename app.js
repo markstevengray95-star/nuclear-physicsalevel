@@ -569,21 +569,68 @@ function renderRadiation(ctx,w,h,t){
   readout("Virtual source → absorber → detector · relative transmission: <strong>"+(100*transmission).toFixed(1)+"%</strong><br>Alpha is stopped most readily; beta is intermediate; gamma is attenuated progressively rather than having one fixed stopping thickness.");
 }
 function renderDecay(ctx,w,h,t){
-  if(running){params.decayTime=clamp(params.decayTime+(slow?.006:.018),0,40);const input=$('[data-key="decayTime"]');if(input){input.value=params.decayTime;input.nextElementSibling.textContent=params.decayTime.toFixed(1)+" s";}}
-  const T=params.halfLife, time=params.decayTime, lambda=ln2/T, survival=Math.exp(-lambda*time);
-  const left=w*.07, top=h*.16, cols=12, gap=Math.min((w*.53)/cols,(h*.64)/10);
-  let alive=0;
+  if(running){
+    params.decayTime=clamp(params.decayTime+(slow?.006:.018),0,40);
+    const input=$('[data-key="decayTime"]');
+    if(input){input.value=params.decayTime;input.nextElementSibling.textContent=params.decayTime.toFixed(1)+" s";}
+  }
+  const T=params.halfLife,time=params.decayTime,lambda=ln2/T,survival=Math.exp(-lambda*time);
+  const left=w*.055,top=h*.18,gridW=w*.48,gridH=h*.58,cols=12,gap=Math.min(gridW/cols,gridH/10);
+  let alive=0,decayed=0;
+
+  label(ctx,"MICROSCOPIC VIEW — WHICH NUCLEUS DECAYS IS RANDOM",left,top-34,"#d6ecff",11);
   atomRandom.forEach((r,i)=>{
-    const survives=r<survival;if(survives)alive++;
+    const survives=r<survival;if(survives)alive++;else decayed++;
     const x=left+(i%cols)*gap, y=top+Math.floor(i/cols)*gap;
-    circle(ctx,x,y,Math.max(3,gap*.24),survives?"#72a9ff":"rgba(110,130,150,.18)",survives?"rgba(255,255,255,.2)":null);
+    if(survives){
+      circle(ctx,x,y,Math.max(3,gap*.23),"#72a9ff","rgba(255,255,255,.25)");
+    }else{
+      circle(ctx,x,y,Math.max(3,gap*.19),"rgba(110,130,150,.16)");
+      if(i%11===0){
+        ctx.strokeStyle="rgba(255,218,125,.42)";ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+11,y-8);ctx.stroke();
+        circle(ctx,x+13,y-9,2.5,"#ffe17a");
+      }
+    }
   });
-  const gx=w*.66, gy=h*.76, gw=w*.28, gh=h*.50;
-  ctx.strokeStyle="#7b93ad";ctx.beginPath();ctx.moveTo(gx,gy-gh);ctx.lineTo(gx,gy);ctx.lineTo(gx+gw,gy);ctx.stroke();
-  ctx.beginPath();for(let i=0;i<=80;i++){const tt=40*i/80, yy=Math.exp(-lambda*tt);const x=gx+gw*i/80,y=gy-gh*yy;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.strokeStyle="#67c7ff";ctx.lineWidth=3;ctx.stroke();
-  circle(ctx,gx+gw*time/40,gy-gh*survival,5,"#ffe98a");
-  label(ctx,"N/N₀",gx-8,gy-gh-8,"#cfe8ff",11,"right");label(ctx,"time",gx+gw,gy+18,"#cfe8ff",11,"right");
-  readout("λ = "+lambda.toFixed(4)+" s⁻¹ · predicted fraction remaining = <strong>"+survival.toFixed(3)+"</strong><br>Displayed surviving nuclei: "+alive+" / 120");
+  label(ctx,"undecayed",left,top+gridH+20,"#a9cfff",10);
+  label(ctx,"decayed event",left+w*.18,top+gridH+20,"#d7bb7b",10);
+
+  // Expected-vs-observed summary
+  const expected=120*survival,obsFrac=alive/120;
+  const bx=left,by=h*.82,bw=w*.43;
+  ctx.fillStyle="#102337";ctx.fillRect(bx,by,bw,12);ctx.fillRect(bx,by+26,bw,12);
+  ctx.fillStyle="#67c7ff";ctx.fillRect(bx,by,bw*survival,12);
+  ctx.fillStyle="#ffe98a";ctx.fillRect(bx,by+26,bw*obsFrac,12);
+  label(ctx,"expected N/N₀",bx,by-5,"#aee5ff",9);
+  label(ctx,"displayed sample",bx,by+21,"#ffe9a9",9);
+
+  // Graph panel
+  const gx=w*.61,gy=h*.79,gw=w*.33,gh=h*.54;
+  ctx.strokeStyle="#7b93ad";ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(gx,gy-gh);ctx.lineTo(gx,gy);ctx.lineTo(gx+gw,gy);ctx.stroke();
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){
+    const tt=40*i/100,yy=Math.exp(-lambda*tt),x=gx+gw*i/100,y=gy-gh*yy;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle="#67c7ff";ctx.lineWidth=3;ctx.stroke();
+
+  // Half-life guide lines
+  for(let n=1;n<=Math.min(4,Math.floor(40/T));n++){
+    const tt=n*T,x=gx+gw*tt/40,y=gy-gh*Math.pow(.5,n);
+    ctx.strokeStyle="rgba(255,233,138,.30)";ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,gy);ctx.lineTo(x,y);ctx.lineTo(gx,y);ctx.stroke();ctx.setLineDash([]);
+    circle(ctx,x,y,4,"#ffe98a");
+    label(ctx,n+"T½",x,gy+16,"#d9c785",8,"center");
+  }
+  circle(ctx,gx+gw*time/40,gy-gh*survival,5,"#ffffff","#ffe98a");
+  label(ctx,"N/N₀",gx-8,gy-gh-8,"#cfe8ff",10,"right");
+  label(ctx,"time / s",gx+gw,gy+18,"#cfe8ff",10,"right");
+  label(ctx,"MACROSCOPIC MODEL — SMOOTH EXPONENTIAL",gx,gy-gh-28,"#d6ecff",11);
+
+  readout(
+    "λ = <strong>"+lambda.toFixed(4)+" s⁻¹</strong> · T½ = <strong>"+T.toFixed(1)+" s</strong> · t/T½ = <strong>"+(time/T).toFixed(2)+"</strong><br>"+
+    "Expected fraction remaining = <strong>"+survival.toFixed(3)+"</strong> ("+expected.toFixed(1)+" of 120 on average); this displayed random sample has <strong>"+alive+"</strong> undecayed and "+decayed+" decayed.<br>"+
+    "Key idea: individual decay events are unpredictable, but a large population follows N = N₀e<sup>−λt</sup>."
+  );
 }
 function decayDelta(mode,Z,N){
   if(mode==="alpha")return [Z-2,N-2];
@@ -592,39 +639,127 @@ function decayDelta(mode,Z,N){
   return [Z,N];
 }
 function renderStability(ctx,w,h){
-  const ox=w*.12, oy=h*.84, gw=w*.70, gh=h*.67;
+  const ox=w*.10,oy=h*.84,gw=w*.65,gh=h*.66;
   ctx.strokeStyle="#7990a8";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ox,oy-gh);ctx.lineTo(ox,oy);ctx.lineTo(ox+gw,oy);ctx.stroke();
-  label(ctx,"N",ox-15,oy-gh,"#cfe8ff",12,"right");label(ctx,"Z",ox+gw,oy+20,"#cfe8ff",12,"right");
+  label(ctx,"neutron number N",ox-14,oy-gh,"#cfe8ff",10,"right");
+  label(ctx,"proton number Z",ox+gw,oy+22,"#cfe8ff",10,"right");
+
+  // N=Z reference
+  ctx.strokeStyle="rgba(180,195,210,.24)";ctx.setLineDash([4,5]);ctx.beginPath();
+  for(let z=10;z<=90;z++){
+    const x=ox+gw*(z-10)/80,y=oy-gh*(z-10)/135;
+    if(z===10)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();ctx.setLineDash([]);
+  label(ctx,"N = Z reference",ox+gw*.22,oy-gh*.18,"#8799aa",9);
+
+  // stability band
   ctx.beginPath();
   for(let z=10;z<=90;z++){
     const stable=z<20?z:Math.round(z*(1.05+.0055*z));
     const x=ox+gw*(z-10)/80,y=oy-gh*(stable-10)/135;
     if(z===10)ctx.moveTo(x,y);else ctx.lineTo(x,y);
   }
-  ctx.strokeStyle="rgba(99,217,164,.55)";ctx.lineWidth=16;ctx.stroke();ctx.lineWidth=2;
+  ctx.strokeStyle="rgba(99,217,164,.42)";ctx.lineWidth=18;ctx.stroke();ctx.lineWidth=2;
+  label(ctx,"approximate band of stability",ox+gw*.57,oy-gh*.63,"#8ff0bf",10);
+
   const Z=params.Z,N=params.N,[z2,n2]=decayDelta(params.decayMode,Z,N);
   const x1=ox+gw*(Z-10)/80,y1=oy-gh*(N-10)/135,x2=ox+gw*(z2-10)/80,y2=oy-gh*(n2-10)/135;
-  circle(ctx,x1,y1,9,"#ffe98a","#fff");ctx.strokeStyle="#ff8fa0";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();circle(ctx,x2,y2,7,"#ff8fa0","#fff");
-  label(ctx,"stable band",ox+gw*.72,oy-gh*.58,"#8ff0bf",12);
-  readout("Parent: Z="+Z+", N="+N+", A="+(Z+N)+" → daughter: Z="+z2+", N="+n2+", A="+(z2+n2));
+  circle(ctx,x1,y1,10,"#ffe98a","#fff");
+  circle(ctx,x2,y2,8,"#ff8fa0","#fff");
+  arrowLine(ctx,x1,y1,x2,y2,"#ff8fa0");
+  label(ctx,"parent",x1,y1-15,"#ffe9a8",9,"center");
+  label(ctx,"daughter",x2,y2+20,"#ffb7c1",9,"center");
+
+  const changes={
+    alpha:["A −4","Z −2","N −2"],
+    betaMinus:["A unchanged","Z +1","N −1"],
+    betaPlus:["A unchanged","Z −1","N +1"],
+    ec:["A unchanged","Z −1","N +1"],
+    gamma:["A unchanged","Z unchanged","N unchanged"]
+  }[params.decayMode];
+  const pX=w*.79,pY=h*.21,pW=w*.18;
+  ctx.fillStyle="rgba(6,20,33,.82)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(pX,pY,pW,h*.48,10);ctx.fill();ctx.stroke();
+  label(ctx,"DECAY BOOKKEEPING",pX+10,pY+20,"#d6ecff",9);
+  changes.forEach((v,n)=>label(ctx,v,pX+12,pY+48+n*28,n===0?"#ffe98a":"#c9dceb",10));
+  label(ctx,"Parent: A="+(Z+N),pX+12,pY+150,"#a9bfd3",9);
+  label(ctx,"Daughter: A="+(z2+n2),pX+12,pY+170,"#a9bfd3",9);
+
+  const targetN=Z<20?Z:Math.round(Z*(1.05+.0055*Z)),delta=N-targetN;
+  const region=Math.abs(delta)<=6?"near the stability band":delta>6?"neutron-rich relative to the band":"proton-rich relative to the band";
+  readout(
+    "Parent: <strong>Z="+Z+", N="+N+", A="+(Z+N)+"</strong> → daughter: <strong>Z="+z2+", N="+n2+", A="+(z2+n2)+"</strong>.<br>"+
+    "Selected parent is "+region+". The arrow shows the bookkeeping effect of <strong>"+params.decayMode+"</strong>; gamma produces no N–Z movement."
+  );
 }
 function renderRadius(ctx,w,h){
-  const A=params.A,r0=params.r0,R=r0*Math.cbrt(A),scale=Math.min(w,h)*.022;
-  const x=w*.34,y=h*.5,r=R*scale;
+  const A=params.A,r0=params.r0,R=r0*Math.cbrt(A),scale=Math.min(w,h)*.020;
+  const u=1.66053906660e-27,rm=R*1e-15,m=A*u,V=(4/3)*Math.PI*Math.pow(rm,3),rho=m/V;
+  const x=w*.26,y=h*.47,r=R*scale;
   drawNucleus(ctx,x,y,r,Math.round(A*.45),Math.round(A*.55));
-  ctx.strokeStyle="#9fddff";ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+r,y);ctx.stroke();label(ctx,"R",x+r/2,y-8,"#9fddff",12,"center");
-  const x2=w*.72,y2=h*.50,r2=r0*Math.cbrt(Math.min(240,A*8))*scale;
-  drawNucleus(ctx,x2,y2,r2,14,18);label(ctx,"If A × 8",x2,y2+r2+25,"#cfe8ff",12,"center");
-  readout("R = "+r0.toFixed(2)+" × "+A+"^(1/3) = <strong>"+R.toFixed(2)+" fm</strong> = "+fmt(R*1e-15,4)+" m");
+  ctx.strokeStyle="#9fddff";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+r,y);ctx.stroke();
+  label(ctx,"R = "+R.toFixed(2)+" fm",x+r/2,y-9,"#9fddff",10,"center");
+  label(ctx,"A = "+A,x,y+r+28,"#cfe8ff",10,"center");
+
+  const A2=Math.min(240,A*8),R2=r0*Math.cbrt(A2),r2=R2*scale,x2=w*.59,y2=h*.47;
+  drawNucleus(ctx,x2,y2,r2,Math.round(A2*.45),Math.round(A2*.55));
+  label(ctx,"A × "+(A2/A).toFixed(1),x2,y2+r2+28,"#cfe8ff",10,"center");
+  label(ctx,"R × "+(R2/R).toFixed(2),x2,y2+r2+44,"#9fddff",9,"center");
+
+  const bx=w*.76,by=h*.20,bw=w*.20;
+  ctx.fillStyle="rgba(6,20,33,.82)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(bx,by,bw,h*.48,10);ctx.fill();ctx.stroke();
+  label(ctx,"DENSITY CHECK",bx+10,by+21,"#d6ecff",9);
+  label(ctx,"mass ≈ A u",bx+10,by+50,"#c9dceb",9);
+  label(ctx,"volume = 4πR³/3",bx+10,by+74,"#c9dceb",9);
+  label(ctx,"R³ ∝ A",bx+10,by+98,"#8fe6b8",9);
+  label(ctx,"m ∝ A",bx+10,by+122,"#8fe6b8",9);
+  label(ctx,"therefore ρ ≈ constant",bx+10,by+151,"#ffe98a",9);
+  label(ctx,"ρ ≈ "+rho.toExponential(2),bx+10,by+181,"#ffffff",10);
+  label(ctx,"kg m⁻³",bx+10,by+199,"#9db4c9",9);
+
+  readout(
+    "R = "+r0.toFixed(2)+" × "+A+"<sup>1/3</sup> = <strong>"+R.toFixed(2)+" fm</strong> = "+fmt(rm,4)+" m.<br>"+
+    "Using m ≈ Au and V = 4πR³/3 gives ρ ≈ <strong>"+rho.toExponential(3)+" kg m⁻³</strong>. Because both mass and volume are proportional to A, nuclear density is approximately constant."
+  );
 }
 function renderMassEnergy(ctx,w,h){
   const dm=params.massDefect,A=params.massA,BE=dm*931.5,per=BE/A;
-  const x=w*.10,barY=h*.52,barW=w*.76;
-  const max=300;ctx.fillStyle="#12273f";ctx.fillRect(x,barY,barW,34);
-  ctx.fillStyle="#67c7ff";ctx.fillRect(x,barY,barW*clamp(BE/max,0,1),34);
-  label(ctx,"binding energy",x,barY-12,"#cfe8ff",12);label(ctx,BE.toFixed(1)+" MeV",x+barW*clamp(BE/max,0,1),barY+24,"#fff",12,"right");
-  drawNucleus(ctx,w*.5,h*.28,55,Math.round(A*.45),Math.round(A*.55));
-  readout("ΔE = "+dm.toFixed(3)+" u × 931.5 MeV/u = <strong>"+BE.toFixed(2)+" MeV</strong><br>Binding energy per nucleon = "+per.toFixed(3)+" MeV");
+  const left=w*.07,right=w*.93,mid=w*.50,top=h*.18;
+
+  label(ctx,"SEPARATED NUCLEONS",w*.22,top-28,"#d6ecff",11,"center");
+  label(ctx,"BOUND NUCLEUS",w*.72,top-28,"#d6ecff",11,"center");
+
+  // separated nucleons
+  const count=Math.min(24,Math.max(4,Math.round(A/8)));
+  for(let i=0;i<count;i++){
+    const cols=6,x=w*.10+(i%cols)*w*.045,y=top+Math.floor(i/cols)*36;
+    circle(ctx,x,y,8,i%2?"#72a9ff":"#ff7777","rgba(255,255,255,.25)");
+  }
+  label(ctx,"higher total rest mass-energy",w*.22,top+h*.25,"#ffcf9d",10,"center");
+
+  // bound nucleus
+  const nr=Math.min(w,h)*.10;drawNucleus(ctx,w*.72,top+h*.12,nr,Math.round(A*.45),Math.round(A*.55));
+  label(ctx,"lower bound-state mass-energy",w*.72,top+h*.25,"#a9e7c3",10,"center");
+
+  // energy difference
+  arrowLine(ctx,w*.38,top+h*.12,w*.57,top+h*.12,"#ffe98a");
+  label(ctx,"binding releases energy",mid,top+h*.08,"#ffe98a",10,"center");
+  label(ctx,"Δm = "+dm.toFixed(3)+" u",mid,top+h*.18,"#d7e9f7",10,"center");
+
+  // energy bars
+  const barY=h*.69,barW=w*.72,barX=w*.14,frac=clamp(BE/300,0,1);
+  ctx.fillStyle="#12273f";ctx.fillRect(barX,barY,barW,18);ctx.fillRect(barX,barY+42,barW,18);
+  ctx.fillStyle="#67c7ff";ctx.fillRect(barX,barY,barW*frac,18);
+  ctx.fillStyle="#8fe6b8";ctx.fillRect(barX,barY+42,barW*clamp(per/10,0,1),18);
+  label(ctx,"total binding energy",barX,barY-7,"#cfe8ff",9);
+  label(ctx,BE.toFixed(2)+" MeV",barX+barW,barY+14,"#ffffff",9,"right");
+  label(ctx,"binding energy per nucleon",barX,barY+35,"#cfe8ff",9);
+  label(ctx,per.toFixed(3)+" MeV nucleon⁻¹",barX+barW,barY+56,"#ffffff",9,"right");
+
+  readout(
+    "Mass defect Δm = <strong>"+dm.toFixed(3)+" u</strong> → binding energy = Δmc² = <strong>"+BE.toFixed(2)+" MeV</strong>.<br>"+
+    "For A = "+A+", binding energy per nucleon = <strong>"+per.toFixed(3)+" MeV</strong>. The bound nucleus has lower total mass-energy than the same nucleons separated; mass-energy is conserved."
+  );
 }
 function beCurve(A){
   if(A<4)return 1.1+1.8*A;
@@ -633,15 +768,47 @@ function beCurve(A){
   return 8.8-.0019*(A-56);
 }
 function renderBinding(ctx,w,h){
-  const ox=w*.10,oy=h*.82,gw=w*.80,gh=h*.62;
-  ctx.strokeStyle="#7990a8";ctx.beginPath();ctx.moveTo(ox,oy-gh);ctx.lineTo(ox,oy);ctx.lineTo(ox+gw,oy);ctx.stroke();
+  const ox=w*.09,oy=h*.80,gw=w*.82,gh=h*.58;
+  ctx.strokeStyle="#7990a8";ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(ox,oy-gh);ctx.lineTo(ox,oy);ctx.lineTo(ox+gw,oy);ctx.stroke();
+
+  // grid
+  for(let yv=2;yv<=10;yv+=2){
+    const y=oy-gh*(yv/10);ctx.strokeStyle="rgba(120,145,170,.13)";ctx.beginPath();ctx.moveTo(ox,y);ctx.lineTo(ox+gw,y);ctx.stroke();
+    label(ctx,String(yv),ox-8,y+3,"#8196aa",8,"right");
+  }
+
   ctx.beginPath();
-  for(let A=2;A<=240;A++){const x=ox+gw*(A-2)/238,y=oy-gh*(beCurve(A)/10);if(A===2)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  for(let A=2;A<=240;A++){
+    const x=ox+gw*(A-2)/238,y=oy-gh*(beCurve(A)/10);
+    if(A===2)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
   ctx.strokeStyle="#67c7ff";ctx.lineWidth=3;ctx.stroke();
-  const A=params.bindA,be=beCurve(A),x=ox+gw*(A-2)/238,y=oy-gh*(be/10);circle(ctx,x,y,7,"#ffe98a","#fff");
-  label(ctx,"fusion region",ox+gw*.10,oy-gh*.46,"#8ff0bf",12);label(ctx,"peak",ox+gw*.24,oy-gh*.90,"#ffe98a",12);label(ctx,"fission region",ox+gw*.67,oy-gh*.70,"#ffb1bd",12);
-  label(ctx,"A",ox+gw,oy+20,"#cfe8ff",12,"right");label(ctx,"BE / nucleon",ox-8,oy-gh,"#cfe8ff",11,"right");
-  readout("At A = "+A+", schematic average binding energy ≈ <strong>"+be.toFixed(2)+" MeV per nucleon</strong>.");
+
+  const A=params.bindA,be=beCurve(A),x=ox+gw*(A-2)/238,y=oy-gh*(be/10);
+  circle(ctx,x,y,7,"#ffe98a","#fff");
+  label(ctx,"selected A="+A,x,y-14,"#ffe98a",9,"center");
+
+  // reference peak
+  const peakA=56,peak=beCurve(peakA),px=ox+gw*(peakA-2)/238,py=oy-gh*(peak/10);
+  circle(ctx,px,py,6,"#8ff0bf","#fff");
+  label(ctx,"near maximum BE/nucleon",px,py-16,"#8ff0bf",9,"center");
+
+  // fusion arrow from light region
+  const fA=8,fx=ox+gw*(fA-2)/238,fy=oy-gh*(beCurve(fA)/10);
+  arrowLine(ctx,fx,fy,px-18,py+10,"rgba(99,217,164,.75)");
+  label(ctx,"fusion: light nuclei → more tightly bound",ox+gw*.12,oy-gh*.37,"#8ff0bf",9);
+
+  // fission arrow from heavy region
+  const hA=220,hx=ox+gw*(hA-2)/238,hy=oy-gh*(beCurve(hA)/10);
+  arrowLine(ctx,hx,hy,px+28,py+16,"rgba(255,170,185,.75)");
+  label(ctx,"fission: heavy nuclei → more tightly bound",ox+gw*.59,oy-gh*.46,"#ffb1bd",9);
+
+  label(ctx,"nucleon number A",ox+gw,oy+20,"#cfe8ff",9,"right");
+  label(ctx,"average binding energy / nucleon (MeV)",ox-7,oy-gh-10,"#cfe8ff",9);
+  readout(
+    "At A = "+A+", schematic average binding energy ≈ <strong>"+be.toFixed(2)+" MeV per nucleon</strong>.<br>"+
+    "Energy can be released when products have a higher binding energy per nucleon: light nuclei can move upward by fusion and very heavy nuclei can move upward by fission. Exact reaction energy requires the actual initial and final masses."
+  );
 }
 function renderFission(ctx,w,h,t){
   const k=params.k,gen=Math.round(params.generation),stage=Math.round(params.eventStage||0);
@@ -975,43 +1142,58 @@ function renderElectronDiffraction(ctx,w,h){
 }
 function renderModeration(ctx,w,h,t){
   const M=params.massRatio,n=Math.round(params.collisionCount);
-  const retain=Math.pow((M-1)/(M+1),2);
-  const energies=[1];for(let i=1;i<=n;i++)energies.push(energies[i-1]*(.5+.5*retain));
+  const headOnRetain=Math.pow((M-1)/(M+1),2);
+  const transfer=Math.max(0,1-headOnRetain);
+  const energies=[1];
+  for(let i=1;i<=n;i++)energies.push(energies[i-1]*(.5+.5*headOnRetain));
 
-  const left=w*.08,right=w*.90,trackY=h*.43,step=(right-left)/Math.max(1,n);
-  label(ctx,"fast neutron",left,trackY-55,"#9fe8ff",11,"center");
-  label(ctx,"moderator nuclei",w*.50,h*.76,"#b9ccff",11,"center");
+  const left=w*.07,right=w*.68,trackY=h*.44,step=(right-left)/Math.max(1,n);
+  label(ctx,"NEUTRON COLLISION PATH",left,h*.13,"#d6ecff",11);
+  ctx.fillStyle="rgba(80,110,145,.08)";ctx.fillRect(w*.04,h*.18,w*.68,h*.59);
 
-  // material background
-  ctx.fillStyle="rgba(80,110,145,.08)";ctx.fillRect(w*.04,h*.22,w*.90,h*.58);
-  for(let i=0;i<n;i++){
-    const x=left+(i+1)*step;
-    const rad=12+Math.min(18,Math.sqrt(M)*3);
-    const g=ctx.createRadialGradient(x-4,h*.62-5,3,x,h*.62,rad);
-    g.addColorStop(0,"#a7c7ff");g.addColorStop(1,"#3c5f91");
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,h*.62,rad,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle="rgba(220,235,255,.45)";ctx.stroke();
-  }
-
-  // neutron path with decreasing speed/energy indicated by spacing and size
+  // moderator targets and neutron path
+  let prevX=left,prevY=trackY;
   for(let i=0;i<=n;i++){
-    const x=left+i*step, Erel=energies[i],rad=5+8*Math.sqrt(Erel);
-    const y=trackY+Math.sin(i*1.65)*18;
+    const x=left+i*step,y=trackY+Math.sin(i*1.55)*22,Erel=energies[i];
     if(i>0){
-      const px=left+(i-1)*step,py=trackY+Math.sin((i-1)*1.65)*18;
-      ctx.strokeStyle="rgba(126,232,255,.45)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(x,y);ctx.stroke();
+      const rad=11+Math.min(20,Math.sqrt(M)*3.2),tx=x,ty=h*.62;
+      const g=ctx.createRadialGradient(tx-4,ty-5,3,tx,ty,rad);
+      g.addColorStop(0,"#a7c7ff");g.addColorStop(1,"#3c5f91");
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(tx,ty,rad,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle="rgba(220,235,255,.45)";ctx.stroke();
+      arrowLine(ctx,prevX,prevY,x,y,"rgba(126,232,255,.42)");
+      label(ctx,""+i,x,h*.70,"#9db3c8",8,"center");
     }
-    circle(ctx,x,y,rad,"#7ee8ff","#fff");
-    if(i>0)label(ctx,"collision "+i,x,h*.70,"#a8bdd3",9,"center");
+    circle(ctx,x,y,5+8*Math.sqrt(Erel),"#7ee8ff","#fff");
+    prevX=x;prevY=y;
   }
+  label(ctx,"fast",left,trackY-30,"#9fe8ff",9,"center");
+  label(ctx,"slower after collisions",right,trackY-30,"#9fe8ff",9,"center");
+  label(ctx,"moderator nuclei (relative mass "+M.toFixed(0)+")",w*.37,h*.76,"#b9ccff",9,"center");
 
-  // energy meter
-  const bx=w*.08,by=h*.14,bw=w*.42;
-  ctx.fillStyle="#102337";ctx.fillRect(bx,by,bw,14);ctx.fillStyle="#7ee8ff";ctx.fillRect(bx,by,bw*energies[n],14);
-  label(ctx,"relative neutron kinetic energy",bx,by-7,"#bfefff",10);
-  label(ctx,(100*energies[n]).toFixed(1)+"% remaining",bx+bw,by+12,"#d8f5ff",10,"right");
+  // collision physics panel
+  const px=w*.75,py=h*.18,pw=w*.21;
+  ctx.fillStyle="rgba(6,20,33,.84)";ctx.strokeStyle="#35536e";ctx.beginPath();ctx.roundRect(px,py,pw,h*.52,10);ctx.fill();ctx.stroke();
+  label(ctx,"ONE COLLISION",px+10,py+20,"#d6ecff",9);
+  label(ctx,"neutron mass ≈ 1",px+10,py+48,"#c9dceb",9);
+  label(ctx,"target mass = "+M.toFixed(0),px+10,py+68,"#c9dceb",9);
+  label(ctx,"max head-on",px+10,py+98,"#9db4c9",8);
+  label(ctx,"energy transfer",px+10,py+115,"#9db4c9",8);
 
-  readout("After "+n+" model collisions, neutron kinetic energy ≈ <strong>"+energies[n].toFixed(3)+"</strong> of its initial value.<br>Moderation slows neutrons by collisions; it is not the same as absorbing them.");
+  const bw=pw-22,bx=px+11,by=py+134;
+  ctx.fillStyle="#102337";ctx.fillRect(bx,by,bw,13);
+  ctx.fillStyle="#8fe6b8";ctx.fillRect(bx,by,bw*clamp(transfer,0,1),13);
+  label(ctx,(100*transfer).toFixed(0)+"% max transfer",bx+bw/2,by+30,"#aeecc7",9,"center");
+
+  const finalE=energies[n];
+  label(ctx,"AFTER "+n+" MODEL COLLISIONS",px+10,py+190,"#d6ecff",9);
+  label(ctx,(100*finalE).toFixed(1)+"% KE remains",px+10,py+214,"#ffe98a",10);
+  label(ctx,"moderation ≠ absorption",px+10,py+246,"#ffbdc5",9);
+
+  readout(
+    "For a head-on elastic-collision model with target/neutron mass ratio "+M.toFixed(0)+", up to <strong>"+(100*transfer).toFixed(1)+"%</strong> of neutron kinetic energy can be transferred in one ideal collision.<br>"+
+    "After "+n+" teaching-model collisions, relative neutron kinetic energy ≈ <strong>"+finalE.toFixed(3)+"</strong>. A moderator slows neutrons; it should not simply remove them from the chain."
+  );
 }
 function renderSim(now){
   const canvas=$("#simCanvas"); if(!canvas)return;
