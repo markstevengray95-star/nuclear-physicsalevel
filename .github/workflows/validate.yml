@@ -34,6 +34,8 @@ jobs:
           test -s vendor/three.module.min.js
           test -s vendor/three.core.min.js
           test -s learning-platform.css
+          test -s lesson-depth.css
+          test -s lesson-depth.js
           test -s learning-platform.js
           test -s manifest.webmanifest
           test -s sw.js
@@ -47,6 +49,7 @@ jobs:
           node --check mastery-upgrades.js
           node --check rutherford-experiment.js
           node --check learning-platform.js
+          node --check lesson-depth.js
           node --check sw.js
       - name: Check integrations
         run: |
@@ -64,6 +67,10 @@ jobs:
           grep -q "rutherford-experiment.js" index.html
           grep -q "rutherford-experiment.css" index.html
           grep -q "learning-platform.js" index.html
+          grep -q "lesson-depth.js" index.html
+          grep -q "lesson-depth.css" index.html
+          grep -q "Auto-mark entire paper" learning-platform.js
+          grep -q "Full-spec teaching" lesson-depth.js
           grep -q "learning-platform.css" index.html
           grep -q "manifest.webmanifest" index.html
           grep -q "Learning dashboard" learning-platform.js
